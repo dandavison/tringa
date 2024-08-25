@@ -1,7 +1,27 @@
-from typing import IO, Iterator
+from collections import namedtuple
+from datetime import datetime
+from typing import IO, Iterator, NamedTuple, Optional
 
 import duckdb
-import junitparser.junitparser as jup
+import junitparser.xunit2 as jup
+
+
+class TestResult(NamedTuple):
+    # suite-level fields
+    file: str
+    hostname: str
+    suite: str
+    suite_timestamp: datetime
+    suite_execution_time: float
+
+    # test-level fields
+    name: str  # Name of the test function
+    classname: str  # Name of class or module containing the test function
+    execution_time: float
+    passed: bool
+    skipped: bool
+    message: Optional[str]  # Failure message
+    text: Optional[str]  # Stack trace or code context of failure
 
 
 def tyto(files: Iterator[IO[bytes]], conn: duckdb.DuckDBPyConnection):
@@ -10,21 +30,37 @@ def tyto(files: Iterator[IO[bytes]], conn: duckdb.DuckDBPyConnection):
             insert_row(conn, row)
 
 
-def get_rows(file: IO[bytes]) -> Iterator[tuple[str, str, str, str | None]]:
-    for test_suite in jup.JUnitXml.fromstring(file.read().decode()):
+empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)
+
+
+def get_rows(file: IO[bytes]) -> Iterator[TestResult]:
+    xml = jup.JUnitXml.fromstring(file.read().decode())
+    for test_suite in xml:
         for test_case in test_suite:
-            result = "Passed" if test_case.result is None else "Failed"
-            stack_trace = None
-            if isinstance(test_case.result, (jup.Error, jup.Failure)):
-                stack_trace = test_case.result.text
-            yield (test_suite.name, test_case.name, result, stack_trace)
+            # Passed test cases have no result. A failed/skipped test case will
+            # typically have a single result, but the schema permits multiple.
+            for result in test_case.result or [empty_result]:
+                yield TestResult(
+                    file=file.name,
+                    hostname=test_suite.hostname,
+                    suite=test_suite.name,
+                    suite_timestamp=datetime.fromisoformat(test_suite.timestamp),
+                    suite_execution_time=test_suite.time,
+                    name=test_case.name,
+                    classname=test_case.classname,
+                    execution_time=test_case.time,
+                    passed=test_case.is_passed,
+                    skipped=test_case.is_skipped,
+                    message=result.message,
+                    text=result.text,
+                )
 
 
-def insert_row(conn: duckdb.DuckDBPyConnection, row: tuple):
+def insert_row(conn: duckdb.DuckDBPyConnection, row: TestResult):
     conn.execute(
         """
-        INSERT INTO test_results (suite_name, case_name, result, stack_trace)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO test (file, hostname, suite, suite_timestamp, suite_execution_time, name, classname, execution_time, passed, skipped, message, text)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         row,
     )
@@ -33,11 +69,19 @@ def insert_row(conn: duckdb.DuckDBPyConnection, row: tuple):
 def create_schema(conn: duckdb.DuckDBPyConnection):
     conn.execute(
         """
-        CREATE TABLE test_results (
-            suite_name VARCHAR,
-            case_name VARCHAR,
-            result VARCHAR,
-            stack_trace VARCHAR
+        CREATE TABLE test (
+            file VARCHAR,
+            hostname VARCHAR,
+            suite VARCHAR,
+            suite_timestamp TIMESTAMP,
+            suite_execution_time FLOAT,
+            name VARCHAR,
+            classname VARCHAR,
+            execution_time FLOAT,
+            passed BOOLEAN,
+            skipped BOOLEAN,
+            message VARCHAR,
+            text VARCHAR
         )
         """
     )

@@ -1,7 +1,7 @@
 [project]
 name = "tyto"
 version = "0.1.0"
-description = "Add your description here"
+description = "A junit.xml tool"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

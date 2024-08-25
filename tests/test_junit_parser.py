@@ -6,6 +6,19 @@ import pytest
 from tyto import create_schema, tyto
 
 
+def test_1():
+    assert 1 == 1
+
+
+def test_2():
+    assert 1 == 2
+
+
+@pytest.mark.skip("skip")
+def test_3():
+    assert 1 == 3
+
+
 @pytest.fixture
 def db_connection():
     conn = duckdb.connect(":memory:")

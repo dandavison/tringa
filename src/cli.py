@@ -30,7 +30,7 @@ def main():
         sys.exit(1)
     else:
         # Example query to show results
-        result = conn.execute("SELECT * FROM test_results").fetchall()
+        result = conn.execute("SELECT * FROM test").fetchall()
         for row in result:
             print(row)
     finally:

@@ -1,9 +1,11 @@
 import sys
+import tempfile
 import zipfile
 from pathlib import Path
 from typing import IO, Iterator
 
 import duckdb
+import IPython
 
 from tyto.app import create_schema, tyto
 
@@ -21,20 +23,18 @@ def main():
         print(f"Error: File {file_path} not found.", file=sys.stderr)
         sys.exit(1)
 
-    conn = duckdb.connect(":memory:")
-    try:
-        create_schema(conn)
-        tyto(get_junit_xml_files(file_path), conn)
-    except zipfile.BadZipFile:
-        print(f"Error: {file_path} is not a valid zip file.", file=sys.stderr)
-        sys.exit(1)
-    else:
-        # Example query to show results
-        result = conn.execute("SELECT * FROM test").fetchall()
-        for row in result:
-            print(row)
-    finally:
-        conn.close()
+    with duckdb.connect(tempfile.mktemp()) as conn:
+        try:
+            create_schema(conn)
+            tyto(get_junit_xml_files(file_path), conn)
+        except zipfile.BadZipFile:
+            print(f"Error: {file_path} is not a valid zip file.", file=sys.stderr)
+            sys.exit(1)
+        else:
+            sql = "SELECT count(*) FROM test"
+            print(sql)
+            print(conn.execute(sql).fetchone())
+            IPython.start_ipython(argv=[], user_ns={"conn": conn, "sql": conn.sql})
 
 
 def get_junit_xml_files(file_path: Path) -> Iterator[IO[bytes]]:

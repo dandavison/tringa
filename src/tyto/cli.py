@@ -5,7 +5,7 @@ from typing import IO, Iterator
 
 import duckdb
 
-from tyto import create_schema, tyto
+from tyto.app import create_schema, tyto
 
 
 def main():

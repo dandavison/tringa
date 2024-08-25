@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-tyto = "cli:main"
+tyto = "tyto.cli:main"
 
 [build-system]
 requires = ["hatchling"]

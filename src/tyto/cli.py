@@ -1,58 +1,56 @@
 import sys
 import tempfile
 import zipfile
+from io import BytesIO
 from pathlib import Path
 from typing import IO, Iterator
 
 import duckdb
 import IPython
 
-from tyto.app import create_schema, tyto
+from tyto.app import create_schema, load_xml
+from tyto.github import download_junit_artifacts
 
 
 def main():
-    if len(sys.argv) != 2:
-        print("Usage: tyto <path_to_file>", file=sys.stderr)
-        print(
-            "The file can be either a single XML file or a ZIP file containing XML files.",
-            file=sys.stderr,
-        )
+    if len(sys.argv) <= 1:
+        print("Usage: tyto owner/repo1 [owner/repo2 ...]", file=sys.stderr)
         sys.exit(1)
-    [file_path] = map(Path, sys.argv[1:])
-    if not file_path.exists():
-        print(f"Error: File {file_path} not found.", file=sys.stderr)
-        sys.exit(1)
+    repos = sys.argv[1:]
 
     with duckdb.connect(tempfile.mktemp()) as conn:
         try:
             create_schema(conn)
-            tyto(get_junit_xml_files(file_path), conn)
-        except zipfile.BadZipFile:
-            print(f"Error: {file_path} is not a valid zip file.", file=sys.stderr)
+            for _, zip_file in download_junit_artifacts(repos):
+                for xml in get_xml_files_from_zip_file(BytesIO(zip_file)):
+                    load_xml(xml, conn)
+        except Exception as err:
+            print(f"Error: {err}", file=sys.stderr)
             sys.exit(1)
         else:
-            sql = "SELECT count(*) FROM test"
-            print(sql)
-            print(conn.execute(sql).fetchone())
             IPython.start_ipython(argv=[], user_ns={"conn": conn, "sql": conn.sql})
 
 
-def get_junit_xml_files(file_path: Path) -> Iterator[IO[bytes]]:
+def get_junit_xml_files_from_disk(file_path: Path) -> Iterator[IO[bytes]]:
     if file_path.suffix.lower() == ".xml":
         with open(file_path, "rb") as f:
             yield f
     elif file_path.suffix.lower() == ".zip":
-        with zipfile.ZipFile(file_path) as zip_file:
-            for file_name in zip_file.namelist():
-                if file_name.endswith(".xml"):
-                    with zip_file.open(file_name) as f:
-                        yield f
+        yield from get_xml_files_from_zip_file(file_path)
     else:
         print(
-            "Error: Unsupported file type. Please provide an XML or ZIP file.",
+            "Error: Please provide an XML (*.xml) or ZIP (*.zip) file.",
             file=sys.stderr,
         )
         sys.exit(1)
+
+
+def get_xml_files_from_zip_file(file: Path | IO[bytes]) -> Iterator[IO[bytes]]:
+    with zipfile.ZipFile(file) as zip_file:
+        for file_name in zip_file.namelist():
+            if file_name.endswith(".xml"):
+                with zip_file.open(file_name) as f:
+                    yield f
 
 
 if __name__ == "__main__":

@@ -23,10 +23,9 @@ class TestResult(NamedTuple):
     text: Optional[str]  # Stack trace or code context of failure
 
 
-def tyto(files: Iterator[IO[bytes]], conn: duckdb.DuckDBPyConnection):
-    for file in files:
-        for row in get_rows(file):
-            insert_row(conn, row)
+def load_xml(xml: IO[bytes], conn: duckdb.DuckDBPyConnection):
+    for row in get_rows(xml):
+        insert_row(conn, row)
 
 
 empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)

@@ -3,7 +3,7 @@ from io import BytesIO
 import duckdb
 import pytest
 
-from tyto import create_schema, tyto
+from tyto.app import create_schema, load_xml
 
 
 def test_1():
@@ -33,7 +33,7 @@ def test_parse_junit_xml_passing(db_connection: duckdb.DuckDBPyConnection):
         <testcase name="test_passing" />
     </testsuite>
     """
-    tyto(iter([BytesIO(xml_content.encode())]), db_connection)
+    load_xml(BytesIO(xml_content.encode()), db_connection)
     result = db_connection.execute("SELECT * FROM test_results").fetchall()
     assert len(result) == 1
     assert result[0] == ("TestSuite1", "test_passing", "Passed")
@@ -47,7 +47,7 @@ def test_parse_junit_xml_failing(db_connection: duckdb.DuckDBPyConnection):
         </testcase>
     </testsuite>
     """
-    tyto(iter([BytesIO(xml_content.encode())]), db_connection)
+    load_xml(BytesIO(xml_content.encode()), db_connection)
     result = db_connection.execute("SELECT * FROM test_results").fetchall()
     assert len(result) == 1
     assert result[0] == ("TestSuite1", "test_failing", "Failed")

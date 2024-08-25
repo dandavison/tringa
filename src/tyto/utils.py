@@ -1,0 +1,34 @@
+import asyncio
+from queue import Queue
+from threading import Thread
+from typing import AsyncIterator, Iterator, TypeVar
+
+T = TypeVar("T")
+
+
+class async_to_sync_iterator[T](Iterator[T]):
+    def __init__(self, async_gen: AsyncIterator[T]) -> None:
+        self.queue = Queue()
+        self.sentinel = object()
+        Thread(target=lambda: asyncio.run(self._produce(async_gen))).start()
+
+    async def _produce(self, async_gen: AsyncIterator[T]) -> None:
+        async for t in async_gen:
+            self.queue.put(t)
+        self.queue.put(self.sentinel)
+
+    def __next__(self) -> T:
+        t = self.queue.get()
+        if t == self.sentinel:
+            raise StopIteration
+        else:
+            return t
+
+
+if __name__ == "__main__":
+
+    async def my_async_gen():
+        for i in range(7):
+            yield i
+
+    print(list(async_to_sync_iterator(my_async_gen())))

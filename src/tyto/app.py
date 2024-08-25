@@ -9,7 +9,6 @@ import junitparser.xunit2 as jup
 class TestResult(NamedTuple):
     # suite-level fields
     file: str
-    hostname: str
     suite: str
     suite_timestamp: datetime
     suite_execution_time: float
@@ -42,7 +41,6 @@ def get_rows(file: IO[bytes]) -> Iterator[TestResult]:
             for result in test_case.result or [empty_result]:
                 yield TestResult(
                     file=file.name,
-                    hostname=test_suite.hostname,
                     suite=test_suite.name,
                     suite_timestamp=datetime.fromisoformat(test_suite.timestamp),
                     suite_execution_time=test_suite.time,
@@ -59,8 +57,8 @@ def get_rows(file: IO[bytes]) -> Iterator[TestResult]:
 def insert_row(conn: duckdb.DuckDBPyConnection, row: TestResult):
     conn.execute(
         """
-        INSERT INTO test (file, hostname, suite, suite_timestamp, suite_execution_time, name, classname, execution_time, passed, skipped, message, text)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO test (file, suite, suite_timestamp, suite_execution_time, name, classname, execution_time, passed, skipped, message, text)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         row,
     )
@@ -71,7 +69,6 @@ def create_schema(conn: duckdb.DuckDBPyConnection):
         """
         CREATE TABLE test (
             file VARCHAR,
-            hostname VARCHAR,
             suite VARCHAR,
             suite_timestamp TIMESTAMP,
             suite_execution_time FLOAT,

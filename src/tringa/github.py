@@ -6,7 +6,8 @@ import sys
 from itertools import chain
 from typing import AsyncIterator, Iterator
 
-from tyto.utils import async_to_sync_iterator, info
+from tringa.log import debug, info
+from tringa.utils import async_to_sync_iterator
 
 
 async def fetch(endpoint: str) -> bytes:
@@ -39,7 +40,7 @@ async def fetch_json(endpoint: str) -> dict:
 
 
 async def list_artifacts(repo: str) -> list[dict[str, str]]:
-    info(f"Listing artifacts for {repo}")
+    debug(f"Listing artifacts for {repo}")
     return [
         {
             "repo": repo,
@@ -57,7 +58,7 @@ async def list_artifacts(repo: str) -> list[dict[str, str]]:
 def download_junit_artifacts(
     repos: list[str],
 ) -> Iterator[tuple[dict[str, str], bytes]]:
-    info(f"Downloading artifacts for {repos}")
+    debug(f"Downloading artifacts for {repos}")
 
     async def fetch_zip(artifact: dict) -> tuple[dict[str, str], bytes]:
         info(f"Downloading {artifact['name']} from {artifact['repo']}")

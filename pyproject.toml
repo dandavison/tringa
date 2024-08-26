@@ -1,18 +1,17 @@
 [project]
-name = "tyto"
+name = "tringa"
 version = "0.1.0"
-description = "A junit.xml tool"
+description = "A tool for querying test output across multiple CI builds on GitHub"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "ipython>=8.26.0",
     "junitparser>=3.1.2",
     "duckdb>=1.0.0",
-    "requests>=2.32.3",
 ]
 
 [project.scripts]
-tyto = "tyto.cli:main"
+tringa = "tringa.cli:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -21,11 +20,5 @@ build-backend = "hatchling.build"
 [tool.uv]
 dev-dependencies = [
     "pdbpp>=0.10.3",
-    "pytest>=8.3.2",
-]
-
-[tool.pytest.ini_options]
-addopts = "--junitxml=junit.xml"
-testpaths = [
-    "tests",
+    "build>=1.2.1",
 ]

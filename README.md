@@ -1,20 +1,20 @@
-`tyto` is a tool for querying test output across multiple CI builds on GitHub.
+`tringa` is a tool for querying test output across multiple CI builds on GitHub.
 It is in early development and not ready for use.
 
 ### Install
 ```
-uv tool install git+https://github.com/dandavison/tyto
+uv tool install git+https://github.com/dandavison/tringa
 ```
 
 ### Example usage
 
-Running `tyto` will download artifacts and leave you in an IPython REPL.
+Running `tringa` will download artifacts and leave you in an IPython REPL.
 There you'll find a function named `sql`, from the [DuckDB Python API](https://duckdb.org/docs/api/python/overview.html).
 It is connected to a database that has one table, named `test`.
 
 
 ```
-$ tyto temporalio/sdk-python
+$ tringa temporalio/sdk-python
 
 In [1]: sql("select * from test limit 1")
 Out[1]:
@@ -39,7 +39,7 @@ Out[2]:
 
 ### Required changes to GitHub Actions workflows
 
-For `tyto` to find output from a CI workflow run, at least one job in the run must upload an artifact containing a directory of junit-xml format files (named uniquely for that job).
+For `tringa` to find output from a CI workflow run, at least one job in the run must upload an artifact containing a directory of junit-xml format files (named uniquely for that job).
 For example, the following fragment of GitHub Actions workflow yaml creates a directory containing junit-xml output from two different test suite runs, and uploads the directory as an artifact.
 - The artifact name must start `junit-xml--`.
 - You must ensure that the artifact name is unique within the repository (so you'll probably want to use `${{github.run_id}}` at least)
@@ -51,7 +51,7 @@ For example, the following fragment of GitHub Actions workflow yaml creates a di
 uses: actions/upload-artifact@v4
 if: always()
 with:
-    name: junit-xml--${{ github.event.repository.name }}--${{github.run_id}}--${{github.run_attempt}}--${{ matrix.python }}--${{ matrix.os }}
+    name: junit-xml--${{github.run_id}}--${{github.run_attempt}}--${{ matrix.python }}--${{ matrix.os }}
     path: junit-xml
     retention-days: 30
 ```

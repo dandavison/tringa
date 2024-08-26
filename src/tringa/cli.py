@@ -8,13 +8,13 @@ from typing import IO, Iterator
 import duckdb
 import IPython
 
-from tyto.app import create_schema, load_xml
-from tyto.github import download_junit_artifacts
+from tringa.app import create_schema, load_xml
+from tringa.github import download_junit_artifacts
 
 
 def main():
     if len(sys.argv) <= 1:
-        print("Usage: tyto owner/repo1 [owner/repo2 ...]", file=sys.stderr)
+        print("Usage: tringa owner/repo1 [owner/repo2 ...]", file=sys.stderr)
         sys.exit(1)
     repos = sys.argv[1:]
 

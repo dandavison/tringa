@@ -1,5 +1,4 @@
 import asyncio
-from enum import IntEnum
 from queue import Queue
 from threading import Thread
 from typing import AsyncIterator, Iterator, TypeVar
@@ -25,21 +24,6 @@ class async_to_sync_iterator[T](Iterator[T]):
             raise StopIteration
         else:
             return t
-
-
-class LogLevel(IntEnum):
-    DEBUG = 0
-    INFO = 1
-    WARN = 2
-    ERROR = 3
-
-
-log_level = LogLevel.WARN
-
-
-def info(msg: str) -> None:
-    if log_level <= LogLevel.INFO:
-        print(msg)
 
 
 if __name__ == "__main__":

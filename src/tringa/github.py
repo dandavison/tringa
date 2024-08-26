@@ -6,7 +6,7 @@ import sys
 from itertools import chain, starmap
 from typing import AsyncIterator, Iterator
 
-from tyto.utils import async_to_sync_iterator
+from tringa.utils import async_to_sync_iterator
 
 
 async def fetch(endpoint: str) -> bytes:

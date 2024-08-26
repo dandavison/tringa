@@ -3,7 +3,7 @@ from io import BytesIO
 import duckdb
 import pytest
 
-from tyto.app import create_schema, load_xml
+from tringa.app import create_schema, load_xml
 
 
 def test_1():

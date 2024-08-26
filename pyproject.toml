@@ -1,5 +1,5 @@
 [project]
-name = "tyto"
+name = "tringa"
 version = "0.1.0"
 description = "A junit.xml tool"
 readme = "README.md"
@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.scripts]
-tyto = "tyto.cli:main"
+tringa = "tringa.cli:main"
 
 [build-system]
 requires = ["hatchling"]

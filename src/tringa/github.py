@@ -3,10 +3,10 @@ import json
 import os
 import subprocess
 import sys
-from itertools import chain, starmap
+from itertools import chain
 from typing import AsyncIterator, Iterator
 
-from tringa.utils import async_to_sync_iterator
+from tringa.utils import async_to_sync_iterator, info
 
 
 async def fetch(endpoint: str) -> bytes:
@@ -39,8 +39,10 @@ async def fetch_json(endpoint: str) -> dict:
 
 
 async def list_artifacts(repo: str) -> list[dict[str, str]]:
+    info(f"Listing artifacts for {repo}")
     return [
         {
+            "repo": repo,
             "name": artifact["name"],
             "id": artifact["id"],
             "url": artifact["url"],
@@ -55,20 +57,19 @@ async def list_artifacts(repo: str) -> list[dict[str, str]]:
 def download_junit_artifacts(
     repos: list[str],
 ) -> Iterator[tuple[dict[str, str], bytes]]:
-    async def fetch_zip(artifact: dict, repo: str) -> tuple[dict[str, str], bytes]:
+    info(f"Downloading artifacts for {repos}")
+
+    async def fetch_zip(artifact: dict) -> tuple[dict[str, str], bytes]:
+        info(f"Downloading {artifact['name']} from {repo}")
         zip = await fetch(f"/repos/{repo}/actions/artifacts/{artifact['id']}/zip")
         return artifact, zip
 
     async def fetch_zips() -> AsyncIterator[tuple[dict[str, str], bytes]]:
-        artifacts = (
-            (a, r)
-            for a, r in zip(
-                chain.from_iterable(await asyncio.gather(*map(list_artifacts, repos))),
-                repos,
-            )
-            if a["name"].startswith("junit-xml--")
+        artifacts = filter(
+            lambda a: a["name"].startswith("junit-xml--"),
+            chain.from_iterable(await asyncio.gather(*map(list_artifacts, repos))),
         )
-        for coro in asyncio.as_completed(starmap(fetch_zip, artifacts)):
+        for coro in asyncio.as_completed(map(fetch_zip, artifacts)):
             yield await coro
 
     # TODO: terminate thread cleanly on error
@@ -77,15 +78,12 @@ def download_junit_artifacts(
 
 if __name__ == "__main__":
     repo = "temporalio/sdk-python"
-    output_dir = "artifacts"
+    output_dir = "/tmp/tringa-artifacts"
     os.makedirs(output_dir, exist_ok=True)
     for artifact, zip_data in download_junit_artifacts(
         ["temporalio/sdk-python", "temporalio/sdk-typescript"]
     ):
-        try:
-            file_path = os.path.join(output_dir, f"{artifact['name']}.zip")
-            with open(file_path, "wb") as f:
-                f.write(zip_data)
-            print(f"Downloaded: {file_path}")
-        except subprocess.CalledProcessError as e:
-            print(f"Failed to get zip data for {artifact['name']}: {e}")
+        file_path = os.path.join(output_dir, f"{artifact['name']}.zip")
+        with open(file_path, "wb") as f:
+            f.write(zip_data)
+        info(f"Downloaded: {file_path}")

@@ -21,7 +21,7 @@ def main():
     with duckdb.connect(tempfile.mktemp()) as conn:
         try:
             create_schema(conn)
-            for _, zip_file in download_junit_artifacts(repos):
+            for artifact, zip_file in download_junit_artifacts(repos):
                 for xml in get_xml_files_from_zip_file(BytesIO(zip_file)):
                     load_xml(xml, conn)
         except Exception as err:

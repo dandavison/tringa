@@ -4,10 +4,57 @@ import os
 import subprocess
 import sys
 from itertools import chain
-from typing import AsyncIterator, Iterator
+from typing import AsyncIterator, Iterator, TypedDict
 
 from tringa.log import debug, info
 from tringa.utils import async_to_sync_iterator
+
+
+class Artifact(TypedDict):
+    repo: str
+    name: str
+    id: int
+    url: str
+    download_url: str
+
+
+def download_junit_artifacts(
+    repos: list[str],
+) -> Iterator[tuple[Artifact, bytes]]:
+    debug(f"Downloading artifacts for {repos}")
+
+    async def fetch_zip(artifact: Artifact) -> tuple[Artifact, bytes]:
+        info(f"Downloading {artifact['name']} from {artifact['repo']}")
+        zip_data = await fetch(
+            f"/repos/{artifact['repo']}/actions/artifacts/{artifact['id']}/zip"
+        )
+        return artifact, zip_data
+
+    async def fetch_zips() -> AsyncIterator[tuple[Artifact, bytes]]:
+        artifacts = filter(
+            lambda a: a["name"].startswith("junit-xml--"),
+            chain.from_iterable(await asyncio.gather(*map(list_artifacts, repos))),
+        )
+        for coro in asyncio.as_completed(map(fetch_zip, artifacts)):
+            yield await coro
+
+    return async_to_sync_iterator(fetch_zips())
+
+
+async def list_artifacts(repo: str) -> list[Artifact]:
+    debug(f"Listing artifacts for {repo}")
+    return [
+        {
+            "repo": repo,
+            "name": artifact["name"],
+            "id": artifact["id"],
+            "url": artifact["url"],
+            "download_url": artifact["archive_download_url"],
+        }
+        for artifact in (await fetch_json(f"/repos/{repo}/actions/artifacts"))[
+            "artifacts"
+        ]
+    ]
 
 
 async def fetch(endpoint: str) -> bytes:
@@ -37,45 +84,6 @@ async def fetch(endpoint: str) -> bytes:
 
 async def fetch_json(endpoint: str) -> dict:
     return json.loads((await fetch(endpoint)).decode())
-
-
-async def list_artifacts(repo: str) -> list[dict[str, str]]:
-    debug(f"Listing artifacts for {repo}")
-    return [
-        {
-            "repo": repo,
-            "name": artifact["name"],
-            "id": artifact["id"],
-            "url": artifact["url"],
-            "download_url": artifact["archive_download_url"],
-        }
-        for artifact in (await fetch_json(f"/repos/{repo}/actions/artifacts"))[
-            "artifacts"
-        ]
-    ]
-
-
-def download_junit_artifacts(
-    repos: list[str],
-) -> Iterator[tuple[dict[str, str], bytes]]:
-    debug(f"Downloading artifacts for {repos}")
-
-    async def fetch_zip(artifact: dict) -> tuple[dict[str, str], bytes]:
-        info(f"Downloading {artifact['name']} from {artifact['repo']}")
-        zip = await fetch(
-            f"/repos/{artifact['repo']}/actions/artifacts/{artifact['id']}/zip"
-        )
-        return artifact, zip
-
-    async def fetch_zips() -> AsyncIterator[tuple[dict[str, str], bytes]]:
-        artifacts = filter(
-            lambda a: a["name"].startswith("junit-xml--"),
-            chain.from_iterable(await asyncio.gather(*map(list_artifacts, repos))),
-        )
-        for coro in asyncio.as_completed(map(fetch_zip, artifacts)):
-            yield await coro
-
-    return async_to_sync_iterator(fetch_zips())
 
 
 if __name__ == "__main__":

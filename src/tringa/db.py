@@ -1,8 +1,5 @@
-import concurrent.futures
-import os
 import zipfile
 from collections import namedtuple
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -36,19 +33,13 @@ class TestResult(NamedTuple):
     text: Optional[str]  # Stack trace or code context of failure
 
 
-def load_xml_from_zip_file_artifacts(conn, artifacts):
-    with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
-        futures = []
-        for artifact, zip_file in artifacts:
-            for file in get_xml_files_from_zip_file(BytesIO(zip_file)):
-                futures.append(
-                    executor.submit(
-                        load_xml, artifact, file.read().decode(), file.name, conn
-                    )
-                )
-
-        for future in concurrent.futures.as_completed(futures):
-            future.result()
+def load_xml_from_zip_file_artifacts(
+    conn: duckdb.DuckDBPyConnection,
+    artifacts: Iterator[tuple[Artifact, bytes]],
+):
+    for artifact, zip_file in artifacts:
+        for file in get_xml_files_from_zip_file(BytesIO(zip_file)):
+            load_xml(artifact, file.read().decode(), file.name, conn)
 
 
 def get_xml_files_from_zip_file(file: Path | IO[bytes]) -> Iterator[IO[bytes]]:
@@ -62,8 +53,6 @@ def get_xml_files_from_zip_file(file: Path | IO[bytes]) -> Iterator[IO[bytes]]:
 def load_xml(
     artifact: Artifact, xml: str, file_name: str, conn: duckdb.DuckDBPyConnection
 ):
-    # https://duckdb.org/docs/guides/python/multiple_threads.html
-    conn = conn.cursor()
     for row in get_rows(artifact, xml, file_name):
         insert_row(conn, row)
 

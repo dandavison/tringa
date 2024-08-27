@@ -55,3 +55,44 @@ with:
     path: junit-xml
     retention-days: 30
 ```
+
+### Example queries
+
+<details>
+<summary>
+Find failed tests in a single PR
+</summary>
+
+<br>
+
+**TODO**: support limiting by PR instead of branch.
+
+```
+$ uv run tringa temporalio/sdk-python --branch=fix-rpc-error-handling
+
+In [8]: sql("select passed, message from test where name = 'test_rpc_already_exists_error_is_raised' ")
+Out[8]:
+┌─────────┬────────────────────────────────────────────────────────────────────────────────────────────┐
+│ passed  │                                          message                                           │
+│ boolean │                                          varchar                                           │
+├─────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
+│ true    │ NULL                                                                                       │
+│ false   │ AttributeError: '_TimeSkippingClientOutboundInterceptor' object has no attribute '_client' │
+│ true    │ NULL                                                                                       │
+│ true    │ NULL                                                                                       │
+│ false   │ AttributeError: '_TimeSkippingClientOutboundInterceptor' object has no attribute '_client' │
+│ true    │ NULL                                                                                       │
+│ true    │ NULL                                                                                       │
+│ false   │ AttributeError: '_TimeSkippingClientOutboundInterceptor' object has no attribute '_client' │
+│ true    │ NULL                                                                                       │
+│ false   │ AttributeError: '_TimeSkippingClientOutboundInterceptor' object has no attribute '_client' │
+│ true    │ NULL                                                                                       │
+│ false   │ AttributeError: '_TimeSkippingClientOutboundInterceptor' object has no attribute '_client' │
+│ true    │ NULL                                                                                       │
+│ true    │ NULL                                                                                       │
+├─────────┴────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 14 rows                                                                                    2 columns │
+└──────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+</details>

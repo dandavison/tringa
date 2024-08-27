@@ -5,6 +5,7 @@ from typing import IO, Iterator
 
 import duckdb
 import IPython
+import typer
 
 from tringa.db import (
     create_schema,
@@ -14,12 +15,7 @@ from tringa.db import (
 from tringa.github import download_junit_artifacts
 
 
-def main():
-    if len(sys.argv) <= 1:
-        print("Usage: tringa owner/repo1 [owner/repo2 ...]", file=sys.stderr)
-        sys.exit(1)
-    repos = sys.argv[1:]
-
+def app(repos: list[str]):
     with duckdb.connect(tempfile.mktemp()) as conn:
         try:
             artifacts = download_junit_artifacts(repos)
@@ -30,6 +26,10 @@ def main():
             sys.exit(1)
         else:
             IPython.start_ipython(argv=[], user_ns={"conn": conn, "sql": conn.sql})
+
+
+def main():
+    typer.run(app)
 
 
 def get_junit_xml_files_from_disk(file_path: Path) -> Iterator[IO[bytes]]:
@@ -44,7 +44,3 @@ def get_junit_xml_files_from_disk(file_path: Path) -> Iterator[IO[bytes]]:
             file=sys.stderr,
         )
         sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

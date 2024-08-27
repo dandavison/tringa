@@ -1,5 +1,8 @@
+import concurrent.futures
+import os
 import zipfile
 from collections import namedtuple
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -35,13 +38,25 @@ class TestResult(NamedTuple):
 
 
 def load_xml_from_zip_file_artifacts(
-    conn: duckdb.DuckDBPyConnection,
-    artifacts: Iterator[tuple[Artifact, bytes]],
+    conn: duckdb.DuckDBPyConnection, artifacts: Iterator[tuple[Artifact, bytes]]
 ):
-    # Trade memory footprint for a progress bar
-    for artifact, zip_file in track(list(artifacts), description="Writing XML to DB"):
-        for file in get_xml_files_from_zip_file(BytesIO(zip_file)):
-            load_xml(artifact, file.read().decode(), file.name, conn)
+    with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
+        futures = []
+        # Trade memory footprint for a progress bar
+        for artifact, zip_file in artifacts:
+            for file in get_xml_files_from_zip_file(BytesIO(zip_file)):
+                futures.append(
+                    executor.submit(
+                        load_xml, artifact, file.read().decode(), file.name, conn
+                    )
+                )
+
+        for future in track(
+            concurrent.futures.as_completed(futures),
+            description="Writing XML to DB",
+            total=len(futures),
+        ):
+            future.result()
 
 
 def get_xml_files_from_zip_file(file: Path | IO[bytes]) -> Iterator[IO[bytes]]:
@@ -55,6 +70,8 @@ def get_xml_files_from_zip_file(file: Path | IO[bytes]) -> Iterator[IO[bytes]]:
 def load_xml(
     artifact: Artifact, xml: str, file_name: str, conn: duckdb.DuckDBPyConnection
 ):
+    # https://duckdb.org/docs/guides/python/multiple_threads.html
+    conn = conn.cursor()
     rows = list(get_rows(artifact, xml, file_name))
     if rows:
         insert_rows(conn, rows)

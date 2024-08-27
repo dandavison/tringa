@@ -7,6 +7,7 @@ from typing import IO, Iterator, NamedTuple, Optional
 
 import duckdb
 import junitparser.xunit2 as jup
+from rich.progress import track
 
 from tringa.github import Artifact
 
@@ -37,7 +38,8 @@ def load_xml_from_zip_file_artifacts(
     conn: duckdb.DuckDBPyConnection,
     artifacts: Iterator[tuple[Artifact, bytes]],
 ):
-    for artifact, zip_file in artifacts:
+    # Trade memory footprint for a progress bar
+    for artifact, zip_file in track(list(artifacts), description="Writing XML to DB"):
         for file in get_xml_files_from_zip_file(BytesIO(zip_file)):
             load_xml(artifact, file.read().decode(), file.name, conn)
 

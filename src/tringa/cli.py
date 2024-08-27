@@ -1,14 +1,16 @@
 import sys
 import tempfile
-import zipfile
-from io import BytesIO
 from pathlib import Path
 from typing import IO, Iterator
 
 import duckdb
 import IPython
 
-from tringa.db import create_schema, load_xml
+from tringa.db import (
+    create_schema,
+    get_xml_files_from_zip_file,
+    load_xml_from_zip_file_artifacts,
+)
 from tringa.github import download_junit_artifacts
 
 
@@ -20,10 +22,9 @@ def main():
 
     with duckdb.connect(tempfile.mktemp()) as conn:
         try:
+            artifacts = download_junit_artifacts(repos)
             create_schema(conn)
-            for artifact, zip_file in download_junit_artifacts(repos):
-                for xml in get_xml_files_from_zip_file(BytesIO(zip_file)):
-                    load_xml(artifact, xml, conn)
+            load_xml_from_zip_file_artifacts(conn, artifacts)
         except Exception as err:
             print(f"Error: {err}", file=sys.stderr)
             sys.exit(1)
@@ -43,14 +44,6 @@ def get_junit_xml_files_from_disk(file_path: Path) -> Iterator[IO[bytes]]:
             file=sys.stderr,
         )
         sys.exit(1)
-
-
-def get_xml_files_from_zip_file(file: Path | IO[bytes]) -> Iterator[IO[bytes]]:
-    with zipfile.ZipFile(file) as zip_file:
-        for file_name in zip_file.namelist():
-            if file_name.endswith(".xml"):
-                with zip_file.open(file_name) as f:
-                    yield f
 
 
 if __name__ == "__main__":

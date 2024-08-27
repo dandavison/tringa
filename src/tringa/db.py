@@ -1,5 +1,4 @@
 import concurrent.futures
-import os
 import zipfile
 from collections import namedtuple
 from concurrent.futures import ThreadPoolExecutor
@@ -40,7 +39,7 @@ class TestResult(NamedTuple):
 def load_xml_from_zip_file_artifacts(
     conn: duckdb.DuckDBPyConnection, artifacts: Iterator[tuple[Artifact, bytes]]
 ):
-    with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
+    with ThreadPoolExecutor(max_workers=1) as executor:
         futures = []
         # Trade memory footprint for a progress bar
         for artifact, zip_file in artifacts:

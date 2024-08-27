@@ -55,8 +55,9 @@ def get_xml_files_from_zip_file(file: Path | IO[bytes]) -> Iterator[IO[bytes]]:
 def load_xml(
     artifact: Artifact, xml: str, file_name: str, conn: duckdb.DuckDBPyConnection
 ):
-    for row in get_rows(artifact, xml, file_name):
-        insert_row(conn, row)
+    rows = list(get_rows(artifact, xml, file_name))
+    if rows:
+        insert_rows(conn, rows)
 
 
 def get_rows(artifact: Artifact, xml: str, file_name: str) -> Iterator[TestResult]:
@@ -84,28 +85,16 @@ def get_rows(artifact: Artifact, xml: str, file_name: str) -> Iterator[TestResul
                 )
 
 
-def insert_row(conn: duckdb.DuckDBPyConnection, row: TestResult):
-    conn.execute(
+def insert_rows(conn: duckdb.DuckDBPyConnection, rows: list[TestResult]):
+    conn.executemany(
         """
         INSERT INTO test (
-            run_id,
-            branch,
-            commit,
-            file,
-            suite,
-            suite_timestamp,
-            suite_execution_time,
-            name,
-            classname,
-            execution_time,
-            passed,
-            skipped,
-            message,
-            text
+            run_id, branch, commit, file, suite, suite_timestamp, suite_execution_time,
+            name, classname, execution_time, passed, skipped, message, text
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
-        row,
+        rows,
     )
 
 

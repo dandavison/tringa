@@ -15,7 +15,9 @@ class Artifact(TypedDict):
     name: str
     id: int
     url: str
-    download_url: str
+    run_id: str
+    branch: str
+    commit: str
 
 
 def download_junit_artifacts(
@@ -33,7 +35,7 @@ def download_junit_artifacts(
     async def fetch_zips() -> AsyncIterator[tuple[Artifact, bytes]]:
         artifacts = filter(
             lambda a: a["name"].startswith("junit-xml--"),
-            chain.from_iterable(await asyncio.gather(*map(list_artifacts, repos))),
+            chain.from_iterable(await asyncio.gather(*map(fetch_artifacts, repos))),
         )
         for coro in asyncio.as_completed(map(fetch_zip, artifacts)):
             yield await coro
@@ -41,7 +43,7 @@ def download_junit_artifacts(
     return async_to_sync_iterator(fetch_zips())
 
 
-async def list_artifacts(repo: str) -> list[Artifact]:
+async def fetch_artifacts(repo: str) -> list[Artifact]:
     debug(f"Listing artifacts for {repo}")
     return [
         {
@@ -49,7 +51,9 @@ async def list_artifacts(repo: str) -> list[Artifact]:
             "name": artifact["name"],
             "id": artifact["id"],
             "url": artifact["url"],
-            "download_url": artifact["archive_download_url"],
+            "run_id": artifact["workflow_run"]["id"],
+            "branch": artifact["workflow_run"]["head_branch"],
+            "commit": artifact["workflow_run"]["head_sha"],
         }
         for artifact in (await fetch_json(f"/repos/{repo}/actions/artifacts"))[
             "artifacts"

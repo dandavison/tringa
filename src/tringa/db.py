@@ -5,8 +5,15 @@ from typing import IO, Iterator, NamedTuple, Optional
 import duckdb
 import junitparser.xunit2 as jup
 
+from tringa.github import Artifact
+
 
 class TestResult(NamedTuple):
+    # run-level fields
+    run_id: str
+    branch: str
+    commit: str
+
     # suite-level fields
     file: str
     suite: str
@@ -23,22 +30,23 @@ class TestResult(NamedTuple):
     text: Optional[str]  # Stack trace or code context of failure
 
 
-def load_xml(xml: IO[bytes], conn: duckdb.DuckDBPyConnection):
-    for row in get_rows(xml):
+def load_xml(artifact: Artifact, xml: IO[bytes], conn: duckdb.DuckDBPyConnection):
+    for row in get_rows(artifact, xml):
         insert_row(conn, row)
 
 
-empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)
-
-
-def get_rows(file: IO[bytes]) -> Iterator[TestResult]:
+def get_rows(artifact: Artifact, file: IO[bytes]) -> Iterator[TestResult]:
     xml = jup.JUnitXml.fromstring(file.read().decode())
+    empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)
     for test_suite in xml:
         for test_case in test_suite:
             # Passed test cases have no result. A failed/skipped test case will
             # typically have a single result, but the schema permits multiple.
             for result in test_case.result or [empty_result]:
                 yield TestResult(
+                    run_id=artifact["run_id"],
+                    branch=artifact["branch"],
+                    commit=artifact["commit"],
                     file=file.name,
                     suite=test_suite.name,
                     suite_timestamp=datetime.fromisoformat(test_suite.timestamp),
@@ -56,8 +64,23 @@ def get_rows(file: IO[bytes]) -> Iterator[TestResult]:
 def insert_row(conn: duckdb.DuckDBPyConnection, row: TestResult):
     conn.execute(
         """
-        INSERT INTO test (file, suite, suite_timestamp, suite_execution_time, name, classname, execution_time, passed, skipped, message, text)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO test (
+            run_id,
+            branch,
+            commit,
+            file,
+            suite,
+            suite_timestamp,
+            suite_execution_time,
+            name,
+            classname,
+            execution_time,
+            passed,
+            skipped,
+            message,
+            text
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         row,
     )
@@ -67,6 +90,9 @@ def create_schema(conn: duckdb.DuckDBPyConnection):
     conn.execute(
         """
         CREATE TABLE test (
+            run_id VARCHAR,
+            branch VARCHAR,
+            commit VARCHAR,
             file VARCHAR,
             suite VARCHAR,
             suite_timestamp TIMESTAMP,

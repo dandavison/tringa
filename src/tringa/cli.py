@@ -8,7 +8,7 @@ from typing import IO, Iterator
 import duckdb
 import IPython
 
-from tringa.app import create_schema, load_xml
+from tringa.db import create_schema, load_xml
 from tringa.github import download_junit_artifacts
 
 
@@ -23,7 +23,7 @@ def main():
             create_schema(conn)
             for artifact, zip_file in download_junit_artifacts(repos):
                 for xml in get_xml_files_from_zip_file(BytesIO(zip_file)):
-                    load_xml(xml, conn)
+                    load_xml(artifact, xml, conn)
         except Exception as err:
             print(f"Error: {err}", file=sys.stderr)
             sys.exit(1)

@@ -9,6 +9,7 @@ dependencies = [
     "junitparser>=3.1.2",
     "duckdb>=1.0.0",
     "rich>=13.8.0",
+    "typer>=0.12.5",
 ]
 
 [project.scripts]

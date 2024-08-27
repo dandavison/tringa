@@ -4,7 +4,7 @@ import os
 import subprocess
 import sys
 from itertools import chain
-from typing import AsyncIterator, Iterator, TypedDict
+from typing import AsyncIterator, Iterator, Optional, TypedDict
 
 from tringa.log import debug, info
 from tringa.utils import async_to_sync_iterator
@@ -22,6 +22,7 @@ class Artifact(TypedDict):
 
 def download_junit_artifacts(
     repos: list[str],
+    branch: Optional[str],
 ) -> Iterator[tuple[Artifact, bytes]]:
     debug(f"Downloading artifacts for {repos}")
 
@@ -32,9 +33,16 @@ def download_junit_artifacts(
         )
         return artifact, zip_data
 
+    def include_artifact(artifact: Artifact) -> bool:
+        if not artifact["name"].startswith("junit-xml--"):
+            return False
+        if branch is not None and artifact["branch"] != branch:
+            return False
+        return True
+
     async def fetch_zips() -> AsyncIterator[tuple[Artifact, bytes]]:
         artifacts = filter(
-            lambda a: a["name"].startswith("junit-xml--"),
+            include_artifact,
             chain.from_iterable(await asyncio.gather(*map(fetch_artifacts, repos))),
         )
         for coro in asyncio.as_completed(map(fetch_zip, artifacts)):
@@ -95,7 +103,8 @@ if __name__ == "__main__":
     output_dir = "/tmp/tringa-artifacts"
     os.makedirs(output_dir, exist_ok=True)
     for artifact, zip_data in download_junit_artifacts(
-        ["temporalio/sdk-python", "temporalio/sdk-typescript"]
+        ["temporalio/sdk-python", "temporalio/sdk-typescript"],
+        None,
     ):
         file_path = os.path.join(output_dir, f"{artifact['name']}.zip")
         with open(file_path, "wb") as f:

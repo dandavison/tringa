@@ -42,12 +42,20 @@ def load_xml_from_zip_file_artifacts(
 ):
     def submit_jobs() -> Iterator[Future]:
         with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
-            for artifact, zip_file in artifacts:
-                for file in get_xml_files_from_zip_file(BytesIO(zip_file)):
+            for artifact, zip_bytes in artifacts:
+                for zip_file, file_name in get_xml_files_from_zip_file(
+                    BytesIO(zip_bytes)
+                ):
                     yield executor.submit(
                         lambda: insert_rows(
                             conn.cursor(),
-                            list(get_rows(artifact, file.read().decode(), file.name)),
+                            list(
+                                get_rows(
+                                    artifact,
+                                    zip_file.read(file_name).decode(),
+                                    file_name,
+                                )
+                            ),
                         )
                     )
 
@@ -55,12 +63,13 @@ def load_xml_from_zip_file_artifacts(
     progress.track(as_completed(jobs), total=len(jobs))
 
 
-def get_xml_files_from_zip_file(file: Path | IO[bytes]) -> Iterator[IO[bytes]]:
+def get_xml_files_from_zip_file(
+    file: Path | IO[bytes],
+) -> Iterator[tuple[zipfile.ZipFile, str]]:
     with zipfile.ZipFile(file) as zip_file:
         for file_name in zip_file.namelist():
             if file_name.endswith(".xml"):
-                with zip_file.open(file_name) as f:
-                    yield f
+                yield zip_file, file_name
 
 
 def get_rows(artifact: Artifact, xml: str, file_name: str) -> Iterator[TestResult]:

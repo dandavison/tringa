@@ -1,12 +1,14 @@
-import zipfile
+import os
 from collections import namedtuple
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import datetime
 from io import BytesIO
-from pathlib import Path
-from typing import IO, Iterator, NamedTuple, Optional
+from typing import Iterator, NamedTuple, Optional
+from zipfile import ZipFile
 
 import duckdb
 import junitparser.xunit2 as jup
+from rich import progress
 
 from tringa.github import Artifact
 
@@ -37,22 +39,22 @@ def load_xml_from_zip_file_artifacts(
     conn: duckdb.DuckDBPyConnection,
     artifacts: Iterator[tuple[Artifact, bytes]],
 ):
-    def parse_all_xml_data():
-        for artifact, zip_file in artifacts:
-            for file in get_xml_files_from_zip_file(BytesIO(zip_file)):
-                yield from get_rows(artifact, file.read().decode(), file.name)
+    def parse_and_load(artifact: Artifact, zip_file: ZipFile, file_name: str):
+        rows = get_rows(artifact, zip_file.read(file_name).decode(), file_name)
+        insert_rows(conn.cursor(), list(rows))
 
-    rows = list(parse_all_xml_data())
-    if rows:
-        insert_rows(conn, rows)
+    def submit_jobs() -> Iterator[Future]:
+        with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
+            for artifact, zip_bytes in artifacts:
+                with ZipFile(BytesIO(zip_bytes)) as zip_file:
+                    for file_name in zip_file.namelist():
+                        if file_name.endswith(".xml"):
+                            yield executor.submit(
+                                parse_and_load, artifact, zip_file, file_name
+                            )
 
-
-def get_xml_files_from_zip_file(file: Path | IO[bytes]) -> Iterator[IO[bytes]]:
-    with zipfile.ZipFile(file) as zip_file:
-        for file_name in zip_file.namelist():
-            if file_name.endswith(".xml"):
-                with zip_file.open(file_name) as f:
-                    yield f
+    jobs = list(submit_jobs())
+    progress.track(as_completed(jobs), total=len(jobs))
 
 
 def get_rows(artifact: Artifact, xml: str, file_name: str) -> Iterator[TestResult]:

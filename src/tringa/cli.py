@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import IO, Iterator, Optional
 
 import duckdb
-import IPython
 import typer
 
 from tringa.db import (
@@ -24,8 +23,8 @@ def app(repos: list[str], branch: Optional[str] = None):
         except Exception as err:
             print(f"Error: {err}", file=sys.stderr)
             sys.exit(1)
-        else:
-            IPython.start_ipython(argv=[], user_ns={"conn": conn, "sql": conn.sql})
+        # else:
+        #     IPython.start_ipython(argv=[], user_ns={"conn": conn, "sql": conn.sql})
 
 
 def main():

@@ -1,5 +1,7 @@
+import os
 import zipfile
 from collections import namedtuple
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from datetime import datetime
 from io import BytesIO
 from pathlib import Path
@@ -7,6 +9,7 @@ from typing import IO, Iterator, NamedTuple, Optional
 
 import duckdb
 import junitparser.xunit2 as jup
+from rich import progress
 
 from tringa.github import Artifact
 
@@ -37,14 +40,19 @@ def load_xml_from_zip_file_artifacts(
     conn: duckdb.DuckDBPyConnection,
     artifacts: Iterator[tuple[Artifact, bytes]],
 ):
-    def parse_all_xml_data():
-        for artifact, zip_file in artifacts:
-            for file in get_xml_files_from_zip_file(BytesIO(zip_file)):
-                yield from get_rows(artifact, file.read().decode(), file.name)
+    def submit_jobs() -> Iterator[Future]:
+        with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
+            for artifact, zip_file in artifacts:
+                for file in get_xml_files_from_zip_file(BytesIO(zip_file)):
+                    yield executor.submit(
+                        lambda: insert_rows(
+                            conn.cursor(),
+                            list(get_rows(artifact, file.read().decode(), file.name)),
+                        )
+                    )
 
-    rows = list(parse_all_xml_data())
-    if rows:
-        insert_rows(conn, rows)
+    jobs = list(submit_jobs())
+    progress.track(as_completed(jobs), total=len(jobs))
 
 
 def get_xml_files_from_zip_file(file: Path | IO[bytes]) -> Iterator[IO[bytes]]:

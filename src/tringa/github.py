@@ -1,12 +1,10 @@
 import asyncio
 import json
-import os
 import subprocess
 import sys
-from itertools import chain
-from typing import AsyncIterator, Iterator, Optional, TypedDict
+from typing import AsyncIterator, Iterator, TypedDict
 
-from tringa.log import debug, info
+from tringa.log import debug
 from tringa.utils import async_to_sync_iterator
 
 
@@ -21,30 +19,21 @@ class Artifact(TypedDict):
 
 
 def download_junit_artifacts(
-    repos: list[str],
-    branch: Optional[str],
+    artifacts: list[Artifact],
 ) -> Iterator[tuple[Artifact, bytes]]:
-    debug(f"Downloading artifacts for {repos}")
+    debug(
+        f"Downloading {len(artifacts)} artifacts:",
+        ", ".join(a["name"] for a in artifacts),
+    )
 
     async def fetch_zip(artifact: Artifact) -> tuple[Artifact, bytes]:
-        info(f"Downloading {artifact['name']} from {artifact['repo']}")
+        debug(f"Downloading {artifact['name']} from {artifact['repo']}")
         zip_data = await fetch(
             f"/repos/{artifact['repo']}/actions/artifacts/{artifact['id']}/zip"
         )
         return artifact, zip_data
 
-    def include_artifact(artifact: Artifact) -> bool:
-        if not artifact["name"].startswith("junit-xml--"):
-            return False
-        if branch is not None and artifact["branch"] != branch:
-            return False
-        return True
-
     async def fetch_zips() -> AsyncIterator[tuple[Artifact, bytes]]:
-        artifacts = filter(
-            include_artifact,
-            chain.from_iterable(await asyncio.gather(*map(fetch_artifacts, repos))),
-        )
         for coro in asyncio.as_completed(map(fetch_zip, artifacts)):
             yield await coro
 
@@ -96,17 +85,3 @@ async def fetch(endpoint: str) -> bytes:
 
 async def fetch_json(endpoint: str) -> dict:
     return json.loads((await fetch(endpoint)).decode())
-
-
-if __name__ == "__main__":
-    repo = "temporalio/sdk-python"
-    output_dir = "/tmp/tringa-artifacts"
-    os.makedirs(output_dir, exist_ok=True)
-    for artifact, zip_data in download_junit_artifacts(
-        ["temporalio/sdk-python", "temporalio/sdk-typescript"],
-        None,
-    ):
-        file_path = os.path.join(output_dir, f"{artifact['name']}.zip")
-        with open(file_path, "wb") as f:
-            f.write(zip_data)
-        info(f"Downloaded: {file_path}")

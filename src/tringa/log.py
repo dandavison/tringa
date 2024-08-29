@@ -17,20 +17,20 @@ class LogLevel(IntEnum):
 log_level = LogLevel.from_env()
 
 
-def debug(msg: str) -> None:
+def debug(*args) -> None:
     if log_level <= LogLevel.DEBUG:
-        print(msg, file=sys.stderr)
+        print(*args, file=sys.stderr)
 
 
-def info(msg: str) -> None:
+def info(*args) -> None:
     if log_level <= LogLevel.INFO:
-        print(msg, file=sys.stderr)
+        print(*args, file=sys.stderr)
 
 
-def warn(msg: str) -> None:
+def warn(*args) -> None:
     if log_level <= LogLevel.WARN:
-        print(msg, file=sys.stderr)
+        print(*args, file=sys.stderr)
 
 
-def error(msg: str) -> None:
-    print(msg, file=sys.stderr)
+def error(*args) -> None:
+    print(*args, file=sys.stderr)

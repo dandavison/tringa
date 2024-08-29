@@ -1,6 +1,6 @@
 import os
 from collections import namedtuple
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from io import BytesIO
 from typing import Iterator, NamedTuple, Optional
@@ -11,6 +11,7 @@ import junitparser.xunit2 as jup
 from rich import progress
 
 from tringa.github import Artifact
+from tringa.log import debug
 
 
 class TestResult(NamedTuple):
@@ -42,21 +43,24 @@ def load_xml_from_zip_file_artifacts(
     artifacts: Iterator[tuple[Artifact, bytes]],
 ):
     def parse_and_load(artifact: Artifact, zip_file: ZipFile, file_name: str):
+        debug("parse_and_load", artifact["name"], file_name)
         rows = get_rows(artifact, zip_file.read(file_name).decode(), file_name)
         insert_rows(conn.cursor(), list(rows))
 
-    def submit_jobs() -> Iterator[Future]:
-        with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
-            for artifact, zip_bytes in artifacts:
-                with ZipFile(BytesIO(zip_bytes)) as zip_file:
-                    for file_name in zip_file.namelist():
-                        if file_name.endswith(".xml"):
-                            yield executor.submit(
-                                parse_and_load, artifact, zip_file, file_name
-                            )
-
-    jobs = list(submit_jobs())
-    progress.track(as_completed(jobs), total=len(jobs))
+    zip_files = []
+    futures = []
+    with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
+        for artifact, zip_bytes in artifacts:
+            zip_file = ZipFile(BytesIO(zip_bytes))
+            for file_name in zip_file.namelist():
+                if file_name.endswith(".xml"):
+                    futures.append(
+                        executor.submit(parse_and_load, artifact, zip_file, file_name)
+                    )
+            zip_files.append(zip_file)
+        progress.track((f.result() for f in as_completed(futures)), total=len(futures))
+    for zip_file in zip_files:
+        zip_file.close()
 
 
 def get_rows(artifact: Artifact, xml: str, file_name: str) -> Iterator[TestResult]:
@@ -131,5 +135,10 @@ def create_schema(conn: duckdb.DuckDBPyConnection):
             message VARCHAR,
             text VARCHAR
         )
+        """
+    )
+    conn.execute(
+        """
+    CREATE INDEX idx_artifact_name ON test(artifact_name);
         """
     )

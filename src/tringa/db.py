@@ -14,6 +14,8 @@ from tringa.github import Artifact
 
 
 class TestResult(NamedTuple):
+    artifact_name: str
+
     # run-level fields
     run_id: str
     branch: str
@@ -65,6 +67,7 @@ def get_rows(artifact: Artifact, xml: str, file_name: str) -> Iterator[TestResul
             # typically have a single result, but the schema permits multiple.
             for result in test_case.result or [empty_result]:
                 yield TestResult(
+                    artifact_name=artifact["name"],
                     run_id=artifact["run_id"],
                     branch=artifact["branch"],
                     commit=artifact["commit"],
@@ -86,6 +89,7 @@ def insert_rows(conn: duckdb.DuckDBPyConnection, rows: list[TestResult]):
     conn.executemany(
         """
         INSERT INTO test (
+            artifact_name,
             run_id,
             branch,
             commit,
@@ -101,7 +105,7 @@ def insert_rows(conn: duckdb.DuckDBPyConnection, rows: list[TestResult]):
             message,
             text
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         rows,
     )
@@ -111,6 +115,7 @@ def create_schema(conn: duckdb.DuckDBPyConnection):
     conn.execute(
         """
         CREATE TABLE test (
+            artifact_name VARCHAR,
             run_id VARCHAR,
             branch VARCHAR,
             commit VARCHAR,

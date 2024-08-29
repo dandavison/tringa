@@ -346,6 +346,7 @@ dependencies = [
     { name = "junitparser" },
     { name = "rich" },
     { name = "typer" },
+    { name = "xdg-base-dirs" },
 ]
 
 [package.dev-dependencies]
@@ -361,6 +362,7 @@ requires-dist = [
     { name = "junitparser", specifier = ">=3.1.2" },
     { name = "rich", specifier = ">=13.8.0" },
     { name = "typer", specifier = ">=0.12.5" },
+    { name = "xdg-base-dirs", specifier = ">=6.0.1" },
 ]
 
 [package.metadata.requires-dev]
@@ -412,4 +414,13 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/60/d9/6625ead93412c5ce86db1f8b4f2a70b8043e0a7c1d30099ba3c6a81641ff/wmctrl-0.5.tar.gz", hash = "sha256:7839a36b6fe9e2d6fd22304e5dc372dbced2116ba41283ea938b2da57f53e962", size = 5202 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/13/ca/723e3f8185738d7947f14ee7dc663b59415c6dee43bd71575f8c7f5cd6be/wmctrl-0.5-py2.py3-none-any.whl", hash = "sha256:ae695c1863a314c899e7cf113f07c0da02a394b968c4772e1936219d9234ddd7", size = 4268 },
+]
+
+[[package]]
+name = "xdg-base-dirs"
+version = "6.0.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/98/58/bf6650c4eba25375f923703b645f8b245ecee75c722ded29189d8b515167/xdg_base_dirs-6.0.1.tar.gz", hash = "sha256:b4c8f4ba72d1286018b25eea374ec6fbf4fddda3d4137edf50de95de53e195a6", size = 4318 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/94/e0/8c5ae4c8fc31492de9db4c6013f28811c0ad3fbfad57b4220fe75a312243/xdg_base_dirs-6.0.1-py3-none-any.whl", hash = "sha256:63f6ebc1721ced2e86c340856e004ef829501a30a37e17079c52cfaf0e1741b9", size = 5027 },
 ]

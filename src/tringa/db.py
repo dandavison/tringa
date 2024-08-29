@@ -42,6 +42,7 @@ def load_xml_from_zip_file_artifacts(
     artifacts: Iterator[tuple[Artifact, bytes]],
 ):
     def parse_and_load(artifact: Artifact, zip_file: ZipFile, file_name: str):
+        print("parse_and_load", artifact["name"], file_name)
         rows = get_rows(artifact, zip_file.read(file_name).decode(), file_name)
         insert_rows(conn.cursor(), list(rows))
 
@@ -131,5 +132,10 @@ def create_schema(conn: duckdb.DuckDBPyConnection):
             message VARCHAR,
             text VARCHAR
         )
+        """
+    )
+    conn.execute(
+        """
+    CREATE INDEX idx_artifact_name ON test(artifact_name);
         """
     )

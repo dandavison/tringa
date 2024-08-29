@@ -86,8 +86,20 @@ def insert_rows(conn: duckdb.DuckDBPyConnection, rows: list[TestResult]):
     conn.executemany(
         """
         INSERT INTO test (
-            run_id, branch, commit, file, suite, suite_timestamp, suite_execution_time,
-            name, classname, execution_time, passed, skipped, message, text
+            run_id,
+            branch,
+            commit,
+            file,
+            suite,
+            suite_timestamp,
+            suite_execution_time,
+            name,
+            classname,
+            execution_time,
+            passed,
+            skipped,
+            message,
+            text
         )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,

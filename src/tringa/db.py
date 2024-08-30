@@ -25,12 +25,12 @@ class TestResult(NamedTuple):
     file: str
     suite: str
     suite_timestamp: datetime
-    suite_execution_time: float
+    suite_time: float
 
     # test-level fields
     name: str  # Name of the test function
     classname: str  # Name of class or module containing the test function
-    execution_time: float
+    time: float
     passed: bool
     skipped: bool
     message: Optional[str]  # Failure message
@@ -74,10 +74,10 @@ def get_rows(artifact: Artifact, xml: str, file_name: str) -> Iterator[TestResul
                     file=file_name,
                     suite=test_suite.name,
                     suite_timestamp=datetime.fromisoformat(test_suite.timestamp),
-                    suite_execution_time=test_suite.time,
+                    suite_time=test_suite.time,
                     name=test_case.name,
                     classname=test_case.classname,
-                    execution_time=test_case.time,
+                    time=test_case.time,
                     passed=test_case.is_passed,
                     skipped=test_case.is_skipped,
                     message=result.message,
@@ -96,10 +96,10 @@ def insert_rows(conn: duckdb.DuckDBPyConnection, rows: list[TestResult]):
             file,
             suite,
             suite_timestamp,
-            suite_execution_time,
+            suite_time,
             name,
             classname,
-            execution_time,
+            time,
             passed,
             skipped,
             message,
@@ -122,10 +122,10 @@ def create_schema(conn: duckdb.DuckDBPyConnection):
             file VARCHAR,
             suite VARCHAR,
             suite_timestamp TIMESTAMP,
-            suite_execution_time FLOAT,
+            suite_time FLOAT,
             name VARCHAR,
             classname VARCHAR,
-            execution_time FLOAT,
+            time FLOAT,
             passed BOOLEAN,
             skipped BOOLEAN,
             message VARCHAR,

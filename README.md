@@ -16,19 +16,34 @@ It is connected to a database that has one table, named `test`.
 ```
 $ tringa temporalio/sdk-python
 
-In [1]: sql("select * from test limit 1")
+In [1]: sql("SELECT column_name, data_type from information_schema.columns where table_name = 'test'")
 Out[1]:
-┌────────────────────┬─────────┬──────────────────────┬───┬─────────┬─────────┬─────────┬─────────┐
-│        file        │  suite  │   suite_timestamp    │ … │ passed  │ skipped │ message │  text   │
-│      varchar       │ varchar │      timestamp       │   │ boolean │ boolean │ varchar │ varchar │
-├────────────────────┼─────────┼──────────────────────┼───┼─────────┼─────────┼─────────┼─────────┤
-│ 3.8-ubuntu-arm.xml │ pytest  │ 2024-08-25 15:27:5…  │ … │ true    │ false   │ NULL    │ NULL    │
-├────────────────────┴─────────┴──────────────────────┴───┴─────────┴─────────┴─────────┴─────────┤
-│ 1 rows                                                                     11 columns (7 shown) │
-└─────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────┬───────────┐
+│   column_name   │ data_type │
+│     varchar     │  varchar  │
+├─────────────────┼───────────┤
+│ artifact_name   │ VARCHAR   │
+│ run_id          │ VARCHAR   │
+│ branch          │ VARCHAR   │
+│ commit          │ VARCHAR   │
+│ file            │ VARCHAR   │
+│ suite           │ VARCHAR   │
+│ suite_timestamp │ TIMESTAMP │
+│ suite_time      │ FLOAT     │
+│ name            │ VARCHAR   │
+│ classname       │ VARCHAR   │
+│ time            │ FLOAT     │
+│ passed          │ BOOLEAN   │
+│ skipped         │ BOOLEAN   │
+│ message         │ VARCHAR   │
+│ text            │ VARCHAR   │
+├─────────────────┴───────────┤
+│ 15 rows           2 columns │
+└─────────────────────────────┘
 
-In [2]: sql("select message from test where passed = false and skipped = false")
-Out[2]:
+
+In [1]: sql("select message from test where passed = false and skipped = false")
+Out[1]:
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                message                                                 │
 │                                                varchar                                                 │

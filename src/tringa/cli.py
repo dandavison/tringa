@@ -14,7 +14,7 @@ from tringa.github import Artifact, download_junit_artifacts, fetch_artifacts
 from tringa.log import info
 
 
-def app(
+def repl(
     repos: list[str],
     branch: Optional[str] = None,
     artifact_name_globs: list[str] = ["*"],
@@ -90,5 +90,17 @@ def list_artifacts(
     return asyncio.run(_list_artifacts())
 
 
+app = typer.Typer()
+
+
+@app.command()
+def tringa(
+    repos: list[str],
+    branch: Optional[str] = None,
+    artifact_name_globs: list[str] = ["*"],
+):
+    repl(repos, branch, artifact_name_globs)
+
+
 def main():
-    typer.run(app)
+    app()

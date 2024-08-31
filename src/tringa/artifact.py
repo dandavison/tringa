@@ -9,11 +9,11 @@ from itertools import chain
 from typing import AsyncIterator, Iterator, Optional, TypedDict
 from zipfile import ZipFile
 
-import duckdb
 import junitparser.xunit2 as jup
 from rich import progress
 
-from tringa import db, gh
+from tringa import gh
+from tringa.db import DB, TestResult
 from tringa.log import debug, info
 from tringa.utils import async_to_sync_iterator
 
@@ -29,7 +29,7 @@ class Artifact(TypedDict):
 
 
 def fetch_and_load_new_artifacts(
-    conn: duckdb.DuckDBPyConnection,
+    db: DB,
     repos: list[str],
     branch: Optional[str],
     artifact_name_globs: Optional[list[str]],
@@ -37,15 +37,15 @@ def fetch_and_load_new_artifacts(
     remote_artifacts = _list_remote_artifacts(
         repos, branch, artifact_name_globs or ["*"]
     )
-    artifacts_to_download = _query_for_artifacts_not_in_db(conn, remote_artifacts)
+    artifacts_to_download = _query_for_artifacts_not_in_db(db, remote_artifacts)
     downloaded_artifacts = _download_zip_artifacts(artifacts_to_download)
-    _load_xml_from_zip_artifacts(conn, downloaded_artifacts)
     msg = f"Downloaded {len(artifacts_to_download)} new artifacts for repos: {repos}"
     if branch is not None:
         msg += f" branch: {branch}"
     if artifact_name_globs is not None:
         msg += f" artifact_name_globs: {artifact_name_globs}"
     info(msg)
+    _load_xml_from_zip_artifacts(db, downloaded_artifacts)
 
 
 def _list_remote_artifacts(
@@ -90,13 +90,16 @@ async def _list_remote_artifacts_for_repo(repo: str) -> list[Artifact]:
 
 
 def _query_for_artifacts_not_in_db(
-    conn: duckdb.DuckDBPyConnection,
+    db: DB,
     available_artifacts: list[Artifact],
 ) -> list[Artifact]:
     # TODO: Avoid repreatedly downloading artifacts that do not contribute tests
-    existing_artifacts = set(
-        s for (s,) in conn.execute("SELECT DISTINCT artifact_name FROM test").fetchall()
-    )
+    existing_artifacts = {
+        s
+        for (s,) in db.connection.execute(
+            "SELECT DISTINCT artifact_name FROM test"
+        ).fetchall()
+    }
     return [a for a in available_artifacts if a["name"] not in existing_artifacts]
 
 
@@ -109,7 +112,7 @@ def _download_zip_artifacts(
     )
 
     async def fetch_zip(artifact: Artifact) -> tuple[Artifact, bytes]:
-        debug(f"Downloading {artifact['name']} from {artifact['repo']}")
+        debug(f"Downloading zip artifact: {artifact['name']} from: {artifact['repo']}")
         zip_data = await gh.api_bytes(
             f"/repos/{artifact['repo']}/actions/artifacts/{artifact['id']}/zip"
         )
@@ -123,14 +126,12 @@ def _download_zip_artifacts(
 
 
 def _load_xml_from_zip_artifacts(
-    conn: duckdb.DuckDBPyConnection,
+    db: DB,
     artifacts: Iterator[tuple[Artifact, bytes]],
 ):
-    def parse_and_load(artifact: Artifact, zip_file: ZipFile, file_name: str):
-        debug("parse_and_load", artifact["name"], file_name)
-        rows = _get_db_rows(artifact, zip_file.read(file_name).decode(), file_name)
-        db.insert_rows(conn, list(rows))
-
+    info(f"Loading artifacts into {db}")
+    # Parsing the XML is slow, and doing it in parallel is a significant
+    # optimization. OTOH we write to the DB from the main thread only.
     zip_files = []
     futures = []
     with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
@@ -139,28 +140,36 @@ def _load_xml_from_zip_artifacts(
             for file_name in zip_file.namelist():
                 if file_name.endswith(".xml"):
                     futures.append(
-                        executor.submit(parse_and_load, artifact, zip_file, file_name)
+                        executor.submit(_get_db_rows, artifact, zip_file, file_name)
                     )
             zip_files.append(zip_file)
-        progress.track((f.result() for f in as_completed(futures)), total=len(futures))
+        rows = []
+        progress.track(
+            [rows.extend(f.result()) for f in as_completed(futures)],
+            total=len(futures),
+        )
+        if rows:
+            db.insert_rows(rows)
     for zip_file in zip_files:
         zip_file.close()
 
 
 def _get_db_rows(
-    artifact: Artifact, xml: str, file_name: str
-) -> Iterator[db.TestResult]:
+    artifact: Artifact, zip_file: ZipFile, file_name: str
+) -> Iterator[TestResult]:
     empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)
+    xml = zip_file.read(file_name).decode()
+    debug(f"Parsing {file_name}: xml is\n{xml}")
     for test_suite in jup.JUnitXml.fromstring(xml):
         for test_case in test_suite:
             # Passed test cases have no result. A failed/skipped test case will
             # typically have a single result, but the schema permits multiple.
             for result in test_case.result or [empty_result]:
-                yield db.TestResult(
+                yield TestResult(
                     artifact_name=artifact["name"],
                     run_id=artifact["run_id"],
                     branch=artifact["branch"],
-                    commit=artifact["commit"],
+                    sha=artifact["commit"],
                     file=file_name,
                     suite=test_suite.name,
                     suite_timestamp=datetime.fromisoformat(test_suite.timestamp),

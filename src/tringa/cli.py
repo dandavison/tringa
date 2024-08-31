@@ -6,8 +6,9 @@ from typing import Optional
 import typer
 
 import tringa.repl
-from tringa import db, gh
+from tringa import gh
 from tringa.artifact import fetch_and_load_new_artifacts
+from tringa.db import DB, DBConfig, DBPersistence, DBType
 
 app = typer.Typer()
 
@@ -19,21 +20,22 @@ warnings.filterwarnings(
 
 @dataclass
 class GlobalOptions:
-    db_persistence: db.DBPersistence
+    db_config: DBConfig
 
 
-global_options: GlobalOptions
+_global_options: GlobalOptions
 
 
 @app.callback()
-def common_options(
-    ctx: typer.Context, db_persistence: db.DBPersistence = db.DBPersistence.EPHEMERAL
+def global_options(
+    db_persistence: DBPersistence = DBPersistence.PERSISTENT,
+    db_type: DBType = DBType.SQLITE,
 ):
     """
     Common options for all commands
     """
-    global global_options
-    global_options = GlobalOptions(db_persistence=db_persistence)
+    global _global_options
+    _global_options = GlobalOptions(db_config=DBConfig(db_persistence, db_type))
 
 
 @app.command()
@@ -42,9 +44,9 @@ def repl(
     branch: Optional[str] = None,
     artifact_name_globs: Optional[list[str]] = None,
 ):
-    with db.connection(global_options.db_persistence) as conn:
-        fetch_and_load_new_artifacts(conn, repos, branch, artifact_name_globs)
-        tringa.repl.repl(conn)
+    with DB.connect(_global_options.db_config) as db:
+        fetch_and_load_new_artifacts(db, repos, branch, artifact_name_globs)
+        tringa.repl.repl(db)
 
 
 @app.command()
@@ -54,10 +56,13 @@ def pr(
     repl: bool = False,
 ):
     pr = asyncio.run(gh.pr(number))
-    with db.connection(global_options.db_persistence) as conn:
-        fetch_and_load_new_artifacts(conn, [pr.repo], pr.branch, artifact_name_globs)
+    with DB.connect(_global_options.db_config) as db:
+        fetch_and_load_new_artifacts(db, [pr.repo], pr.branch, artifact_name_globs)
         if repl:
-            tringa.repl.repl(conn)
+            tringa.repl.repl(db)
+        else:
+            nrows = db.connection.execute("select count(*) from test").fetchone()[0]
+            print(f"{nrows} rows")
 
 
 def main():

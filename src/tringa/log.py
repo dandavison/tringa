@@ -1,6 +1,9 @@
 import os
 import sys
 from enum import IntEnum
+from typing import NoReturn
+
+from rich.console import Console
 
 
 class LogLevel(IntEnum):
@@ -29,8 +32,16 @@ def info(*args) -> None:
 
 def warn(*args) -> None:
     if log_level <= LogLevel.WARN:
-        print(*args, file=sys.stderr)
+        console = Console(stderr=True)
+        console.print("[bold yellow]WARN:[/bold yellow]", *args)
 
 
 def error(*args) -> None:
-    print(*args, file=sys.stderr)
+    if log_level <= LogLevel.ERROR:
+        console = Console(stderr=True)
+        console.print("[bold red]ERROR:[/bold red]", *args)
+
+
+def fatal(*args) -> NoReturn:
+    error(*args)
+    sys.exit(1)

@@ -1,17 +1,12 @@
-import os
-from collections import namedtuple
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from contextlib import contextmanager
 from datetime import datetime
-from io import BytesIO
-from typing import Iterator, NamedTuple, Optional
-from zipfile import ZipFile
+from pathlib import Path
+from typing import NamedTuple, Optional
 
 import duckdb
-import junitparser.xunit2 as jup
-from rich import progress
+from xdg_base_dirs import xdg_data_home
 
-from tringa.github import Artifact
-from tringa.log import debug
+from tringa.log import info
 
 
 class TestResult(NamedTuple):
@@ -38,55 +33,22 @@ class TestResult(NamedTuple):
     text: Optional[str]  # Stack trace or code context of failure
 
 
-def load_xml_from_zip_file_artifacts(
-    conn: duckdb.DuckDBPyConnection,
-    artifacts: Iterator[tuple[Artifact, bytes]],
-):
-    def parse_and_load(artifact: Artifact, zip_file: ZipFile, file_name: str):
-        debug("parse_and_load", artifact["name"], file_name)
-        rows = get_rows(artifact, zip_file.read(file_name).decode(), file_name)
-        insert_rows(conn.cursor(), list(rows))
-
-    zip_files = []
-    futures = []
-    with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
-        for artifact, zip_bytes in artifacts:
-            zip_file = ZipFile(BytesIO(zip_bytes))
-            for file_name in zip_file.namelist():
-                if file_name.endswith(".xml"):
-                    futures.append(
-                        executor.submit(parse_and_load, artifact, zip_file, file_name)
-                    )
-            zip_files.append(zip_file)
-        progress.track((f.result() for f in as_completed(futures)), total=len(futures))
-    for zip_file in zip_files:
-        zip_file.close()
+@contextmanager
+def connection():
+    db = _get_db()
+    info(f"Using database: {db}")
+    with duckdb.connect(str(db)) as conn:
+        yield conn
 
 
-def get_rows(artifact: Artifact, xml: str, file_name: str) -> Iterator[TestResult]:
-    empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)
-    for test_suite in jup.JUnitXml.fromstring(xml):
-        for test_case in test_suite:
-            # Passed test cases have no result. A failed/skipped test case will
-            # typically have a single result, but the schema permits multiple.
-            for result in test_case.result or [empty_result]:
-                yield TestResult(
-                    artifact_name=artifact["name"],
-                    run_id=artifact["run_id"],
-                    branch=artifact["branch"],
-                    commit=artifact["commit"],
-                    file=file_name,
-                    suite=test_suite.name,
-                    suite_timestamp=datetime.fromisoformat(test_suite.timestamp),
-                    suite_time=test_suite.time,
-                    name=test_case.name,
-                    classname=test_case.classname,
-                    time=test_case.time,
-                    passed=test_case.is_passed,
-                    skipped=test_case.is_skipped,
-                    message=result.message,
-                    text=result.text,
-                )
+def _get_db() -> Path:
+    dir = Path(xdg_data_home()) / "tringa"
+    dir.mkdir(parents=True, exist_ok=True)
+    path = dir / "tringa.duckdb"
+    if not path.exists():
+        with duckdb.connect(str(path)) as conn:
+            _create_schema(conn)
+    return path
 
 
 def insert_rows(conn: duckdb.DuckDBPyConnection, rows: list[TestResult]):
@@ -115,7 +77,7 @@ def insert_rows(conn: duckdb.DuckDBPyConnection, rows: list[TestResult]):
     )
 
 
-def create_schema(conn: duckdb.DuckDBPyConnection):
+def _create_schema(conn: duckdb.DuckDBPyConnection):
     conn.execute(
         """
         CREATE TABLE test (

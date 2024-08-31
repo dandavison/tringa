@@ -1,5 +1,6 @@
 from contextlib import contextmanager
 from datetime import datetime
+from enum import StrEnum
 from pathlib import Path
 from typing import NamedTuple, Optional
 
@@ -33,15 +34,22 @@ class TestResult(NamedTuple):
     text: Optional[str]  # Stack trace or code context of failure
 
 
+class DBPersistence(StrEnum):
+    PERSISTENT = "persistent"
+    EPHEMERAL = "ephemeral"
+
+
 @contextmanager
-def connection():
-    db = _get_db()
+def connection(db_type: DBPersistence):
+    db = ":memory:" if db_type == DBPersistence.EPHEMERAL else str(_get_db_path())
     info(f"Using database: {db}")
-    with duckdb.connect(str(db)) as conn:
+    with duckdb.connect(db) as conn:
+        if db_type == DBPersistence.EPHEMERAL:
+            _create_schema(conn)
         yield conn
 
 
-def _get_db() -> Path:
+def _get_db_path() -> Path:
     dir = Path(xdg_data_home()) / "tringa"
     dir.mkdir(parents=True, exist_ok=True)
     path = dir / "tringa.duckdb"

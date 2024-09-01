@@ -11,7 +11,6 @@ from typing import (
     Iterator,
     NamedTuple,
     Optional,
-    Self,
     Sequence,
     TypeVar,
 )
@@ -114,6 +113,16 @@ class DBConfig:
             dir.mkdir(parents=True, exist_ok=True)
             self.path = dir / f"tringa.{self.db_type.value}"
 
+    @contextmanager
+    def connect(self) -> Iterator["DB"]:
+        new_db = not self.path or not self.path.exists()
+        cls = SqliteDB if self.db_type == DBType.SQLITE else DuckDB
+        with cls._connect(self.path) as conn:
+            db = cls(conn, self.path)  # type: ignore
+            if new_db:
+                db.create_schema()
+            yield db
+
 
 # In sqlite you always execute sql using a `connection.cursor()`, but you call
 # commit() on the `connection`. In duckdb you can use the `connection` to
@@ -134,16 +143,6 @@ class DB(Generic[Con, Cur], ABC):
 
     @abstractmethod
     def cursor(self) -> Cur: ...
-
-    @contextmanager
-    @classmethod
-    def connect(cls, db_config: DBConfig) -> Iterator[Self]:
-        new_db = not db_config.path or not db_config.path.exists()
-        with cls._connect(db_config.path) as conn:
-            db = cls(conn, db_config.path)
-            if new_db:
-                db.create_schema()
-            yield db
 
     def create_schema(self) -> None:
         debug(f"{self}: creating schema")

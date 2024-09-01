@@ -8,7 +8,7 @@ import typer
 import tringa.repl
 from tringa import gh
 from tringa.artifact import fetch_and_load_new_artifacts
-from tringa.db import DB, DBConfig, DBPersistence, DBType
+from tringa.db import DBConfig, DBPersistence, DBType
 
 app = typer.Typer()
 
@@ -44,7 +44,7 @@ def repl(
     branch: Optional[str] = None,
     artifact_name_globs: Optional[list[str]] = None,
 ):
-    with DB.connect(_global_options.db_config) as db:
+    with _global_options.db_config.connect() as db:
         fetch_and_load_new_artifacts(db, repos, branch, artifact_name_globs)
         tringa.repl.repl(db)
 
@@ -56,7 +56,7 @@ def pr(
     repl: bool = False,
 ):
     pr = asyncio.run(gh.pr(number))
-    with DB.connect(_global_options.db_config) as db:
+    with _global_options.db_config.connect() as db:
         fetch_and_load_new_artifacts(db, [pr.repo], pr.branch, artifact_name_globs)
         if repl:
             tringa.repl.repl(db)

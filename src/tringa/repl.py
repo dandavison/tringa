@@ -1,6 +1,7 @@
 import os
 import shutil
 import sqlite3
+from enum import StrEnum
 
 import duckdb
 import IPython
@@ -9,12 +10,17 @@ from tringa.db import DB
 from tringa.log import fatal
 
 
-def repl(db: DB):
-    match db.connection:
-        case duckdb.DuckDBPyConnection():
+class Repl(StrEnum):
+    SQL = "sql"
+    PYTHON = "python"
+
+
+def repl(db: DB, repl: Repl):
+    match repl:
+        case Repl.SQL:
             sql(db)
-        case sqlite3.Connection():
-            sql(db)
+        case Repl.PYTHON:
+            python(db)
 
 
 def sql(db: DB):

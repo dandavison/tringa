@@ -25,7 +25,6 @@ from typing import (
 )
 
 import duckdb
-from xdg_base_dirs import xdg_data_home
 
 from tringa.log import debug
 
@@ -105,22 +104,10 @@ class DBType(StrEnum):
     SQLITE = "sqlite"
 
 
-class DBPersistence(StrEnum):
-    PERSISTENT = "persistent"
-    EPHEMERAL = "ephemeral"
-
-
 @dataclass
 class DBConfig:
-    db_persistence: DBPersistence
     db_type: DBType
-    path: Optional[Path] = None
-
-    def __post_init__(self) -> None:
-        if self.db_persistence == DBPersistence.PERSISTENT:
-            dir = Path(xdg_data_home()) / "tringa"
-            dir.mkdir(parents=True, exist_ok=True)
-            self.path = dir / f"tringa.{self.db_type.value}"
+    path: Optional[Path]
 
     @contextmanager
     def connect(self) -> Iterator["DB"]:

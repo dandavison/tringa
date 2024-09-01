@@ -176,6 +176,7 @@ def _get_db_rows(
                     suite_time=test_suite.time,
                     name=test_case.name,
                     classname=test_case.classname,
+                    flaky=False,
                     time=test_case.time,
                     passed=test_case.is_passed,
                     skipped=test_case.is_skipped,

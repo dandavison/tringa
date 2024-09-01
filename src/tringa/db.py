@@ -33,6 +33,7 @@ class TestResult(NamedTuple):
     artifact_name: str
 
     # run-level fields
+    # TODO: add repo?
     run_id: str
     branch: str
     sha: str
@@ -49,6 +50,7 @@ class TestResult(NamedTuple):
     time: float
     passed: bool
     skipped: bool
+    flaky: bool
     message: Optional[str]  # Failure message
     text: Optional[str]  # Stack trace or code context of failure
 
@@ -68,6 +70,7 @@ CREATE TABLE test (
     time FLOAT,
     passed BOOLEAN,
     skipped BOOLEAN,
+    flaky BOOLEAN,
     message VARCHAR,
     text VARCHAR
 );
@@ -92,10 +95,11 @@ INSERT INTO test (
     time,
     passed,
     skipped,
+    flaky,
     message,
     text
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 """
 
 
@@ -123,8 +127,11 @@ class DBConfig:
 # In sqlite you always execute sql using a `connection.cursor()`, but you call
 # commit() on the `connection`. In duckdb you can use the `connection` to
 # execute sql (but should use a connection.cursor() in a thread).
-Con = TypeVar("Con", bound=sqlite3.Connection | duckdb.DuckDBPyConnection)
-Cur = TypeVar("Cur", bound=sqlite3.Cursor | duckdb.DuckDBPyConnection)
+Cursor = sqlite3.Cursor | duckdb.DuckDBPyConnection
+Connection = sqlite3.Connection | duckdb.DuckDBPyConnection
+
+Con = TypeVar("Con", bound=Connection)
+Cur = TypeVar("Cur", bound=Cursor)
 
 
 @dataclass

@@ -8,6 +8,7 @@ import typer
 
 import tringa.repl
 from tringa import gh, queries
+from tringa.annotations import flaky
 from tringa.artifact import fetch_and_load_new_artifacts
 from tringa.db import DBConfig, DBType
 
@@ -65,10 +66,16 @@ def pr(
     Note that if you use --db-path, then the DB in the REPL may have tests from
     other PRs, repos, etc.
     """
+    # TODO: restrict to test results from the last run
     _validate_options(_global_options, repl)
     pr = asyncio.run(gh.pr(pr_identifier))
     with _global_options.db_config.connect() as db:
-        fetch_and_load_new_artifacts(db, [pr.repo], pr.branch, artifact_name_globs)
+        # We do not restrict to the PR branch in order to collect information
+        # across branches used to identify flakes.
+        fetch_and_load_new_artifacts(
+            db, [pr.repo], artifact_name_globs=artifact_name_globs
+        )
+        flaky.annotate(db.cursor())
         if repl:
             tringa.repl.repl(db, repl)
         else:

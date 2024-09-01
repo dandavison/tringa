@@ -31,8 +31,8 @@ class Artifact(TypedDict):
 def fetch_and_load_new_artifacts(
     db: DB,
     repos: list[str],
-    branch: Optional[str],
-    artifact_name_globs: Optional[list[str]],
+    branch: Optional[str] = None,
+    artifact_name_globs: Optional[list[str]] = None,
 ):
     remote_artifacts = _list_remote_artifacts(
         repos, branch, artifact_name_globs or ["*"]
@@ -176,6 +176,7 @@ def _get_db_rows(
                     suite_time=test_suite.time,
                     name=test_case.name,
                     classname=test_case.classname,
+                    flaky=False,
                     time=test_case.time,
                     passed=test_case.is_passed,
                     skipped=test_case.is_skipped,

@@ -28,8 +28,8 @@ _global_options: GlobalOptions
 
 @app.callback()
 def global_options(
-    db_persistence: DBPersistence = DBPersistence.PERSISTENT,
-    db_type: DBType = DBType.SQLITE,
+    db_persistence: DBPersistence = DBPersistence.EPHEMERAL,
+    db_type: DBType = DBType.DUCKDB,
 ):
     """
     Common options for all commands

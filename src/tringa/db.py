@@ -1,3 +1,12 @@
+"""
+We currently support both duckdb and sqlite. While there's no technical reason
+to use duckdb for this application, it has a nice SQL REPL, and its Python REPL
+has several useful features. However, a SQL REPL is available for sqlite
+(litecli) via Python packaging, whereas the duckdb CLI must be installed
+separately. These considerations have led to this module abstracting over the
+two backends, which would otherwise be undesirable.
+"""
+
 import sqlite3
 from abc import ABC, abstractmethod
 from contextlib import contextmanager

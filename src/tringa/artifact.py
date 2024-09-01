@@ -14,7 +14,7 @@ from rich import progress
 
 from tringa import gh
 from tringa.db import DB, TestResult
-from tringa.log import debug, info
+from tringa.msg import debug, info
 from tringa.utils import async_to_sync_iterator
 
 

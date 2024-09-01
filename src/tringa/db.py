@@ -26,7 +26,7 @@ from typing import (
 
 import duckdb
 
-from tringa.log import debug
+from tringa.msg import debug
 
 
 class TestResult(NamedTuple):

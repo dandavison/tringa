@@ -7,7 +7,7 @@ import duckdb
 import IPython
 
 from tringa.db import DB
-from tringa.log import fatal
+from tringa.msg import fatal
 
 
 class Repl(StrEnum):

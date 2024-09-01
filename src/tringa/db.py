@@ -140,6 +140,9 @@ class DB(Generic[Con, Cur], ABC):
     @abstractmethod
     def cursor(self) -> Cur: ...
 
+    @abstractmethod
+    def sql(self, sql: str) -> str: ...
+
     def create_schema(self) -> None:
         debug(f"{self}: creating schema")
         self.cursor().execute(CREATE_SCHEMA_SQL)
@@ -167,6 +170,9 @@ class SqliteDB(DB[sqlite3.Connection, sqlite3.Cursor]):
     def cursor(self) -> sqlite3.Cursor:
         return self.connection.cursor()
 
+    def sql(self, sql: str) -> str:
+        return str(self.cursor().execute(sql).fetchall())
+
     def insert_rows(self, rows: Iterable[TestResult]) -> None:
         super().insert_rows(rows)
         self.connection.commit()
@@ -184,3 +190,6 @@ class DuckDB(DB[duckdb.DuckDBPyConnection, duckdb.DuckDBPyConnection]):
 
     def cursor(self) -> duckdb.DuckDBPyConnection:
         return self.connection
+
+    def sql(self, sql: str) -> str:
+        return str(self.connection.sql(sql))

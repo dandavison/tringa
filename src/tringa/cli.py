@@ -2,16 +2,16 @@ import asyncio
 import warnings
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
 import typer
 
 import tringa.repl
-from tringa import gh
+from tringa import gh, queries
 from tringa.artifact import fetch_and_load_new_artifacts
 from tringa.db import DBConfig, DBType
 
-app = typer.Typer()
+app = typer.Typer(rich_markup_mode="rich")
 
 
 @dataclass
@@ -49,10 +49,22 @@ def repl(
 
 @app.command()
 def pr(
-    pr_identifier: Optional[str] = None,
+    pr_identifier: Annotated[Optional[str], typer.Argument()] = None,
     artifact_name_globs: Optional[list[str]] = None,
     repl: Optional[tringa.repl.Repl] = None,
 ):
+    """
+    Fetch and analyze test results from a PR.
+
+    --pr-identifier may be any of the formats accepted by the GitHub `gh` CLI tool (https://cli.github.com/manual/):
+      - PR number, e.g. "123";
+      - PR URL, e.g. "https://github.com/OWNER/REPO/pull/123"; or
+      - name of the PR's head branch, e.g. "patch-1" or "OWNER:patch-1".
+
+    By default, a table of failed tests is printed, but --repl is available.
+    Note that if you use --db-path, then the DB in the REPL may have tests from
+    other PRs, repos, etc.
+    """
     _validate_options(_global_options, repl)
     pr = asyncio.run(gh.pr(pr_identifier))
     with _global_options.db_config.connect() as db:
@@ -60,8 +72,7 @@ def pr(
         if repl:
             tringa.repl.repl(db, repl)
         else:
-            nrows = db.connection.execute("select count(*) from test").fetchone()[0]
-            print(f"{nrows} rows")
+            print(db.sql(queries.failed_tests_in_branch(pr.branch)))
 
 
 def _validate_options(global_options: GlobalOptions, repl: Optional[tringa.repl.Repl]):

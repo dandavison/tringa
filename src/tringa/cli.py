@@ -48,11 +48,11 @@ def repl(
 
 @app.command()
 def pr(
-    number: Optional[int] = None,
+    pr_identifier: Optional[str] = None,
     artifact_name_globs: Optional[list[str]] = None,
     repl: Optional[tringa.repl.Repl] = None,
 ):
-    pr = asyncio.run(gh.pr(number))
+    pr = asyncio.run(gh.pr(pr_identifier))
     with _global_options.db_config.connect() as db:
         fetch_and_load_new_artifacts(db, [pr.repo], pr.branch, artifact_name_globs)
         if repl:

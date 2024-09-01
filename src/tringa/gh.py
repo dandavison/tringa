@@ -50,7 +50,7 @@ class PR:
         return self.headRefName
 
 
-async def pr(number: Optional[int] = None) -> PR:
+async def pr(pr_identifier: Optional[str] = None) -> PR:
     cmd = [
         "gh",
         "pr",
@@ -58,8 +58,8 @@ async def pr(number: Optional[int] = None) -> PR:
         "--json",
         "headRefName,headRepository,headRepositoryOwner",
     ]
-    if number is not None:
-        cmd.append(str(number))
+    if pr_identifier is not None:
+        cmd.append(pr_identifier)
 
     try:
         process = await asyncio.create_subprocess_exec(

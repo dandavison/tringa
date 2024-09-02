@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Annotated, Optional
 
+import duckdb
 import typer
 from xdg_base_dirs import xdg_data_home
 
@@ -12,7 +13,8 @@ from tringa import gh, queries
 from tringa.annotations import flaky
 from tringa.artifact import fetch_and_load_new_artifacts
 from tringa.db import DBConfig, DBType
-from tringa.msg import info
+from tringa.msg import error, info
+from tringa.utils import tee
 
 app = typer.Typer(rich_markup_mode="rich")
 
@@ -79,7 +81,6 @@ def pr(
     Note that if you use --db-path, then the DB in the REPL may have tests from
     other PRs, repos, etc.
     """
-    # TODO: restrict to test results from the last run
     _validate_options(_global_options, repl)
     pr = asyncio.run(gh.pr(pr_identifier))
     with _global_options.db_config.connect() as db:
@@ -92,7 +93,13 @@ def pr(
         if repl:
             tringa.repl.repl(db, repl)
         else:
-            print(db.sql(queries.failed_tests_in_branch(pr.branch)))
+            run_id = (
+                db.cursor()
+                .execute(tee(queries.last_run_id(pr.repo, pr.branch)))
+                .fetchone()[0]
+            )
+            print(db.sql(tee(queries.count_test_results())))
+            print(db.sql(tee(queries.failed_tests_in_run(run_id))))
 
 
 def _validate_options(global_options: GlobalOptions, repl: Optional[tringa.repl.Repl]):
@@ -112,4 +119,13 @@ warnings.filterwarnings(
 
 
 def main():
-    app()
+    try:
+        app()
+    except duckdb.IOException as e:
+        error(
+            f"{e}\n\nIt looks like you left a tringa REPL open? Connecting to the DB from multiple processes is not supported currently."
+        )
+        exit(1)
+    except Exception as e:
+        error(e)
+        exit(1)

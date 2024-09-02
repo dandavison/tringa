@@ -166,6 +166,7 @@ def _get_db_rows(
             # typically have a single result, but the schema permits multiple.
             for result in test_case.result or [empty_result]:
                 yield TestResult(
+                    repo=artifact["repo"],
                     artifact_name=artifact["name"],
                     run_id=artifact["run_id"],
                     branch=artifact["branch"],

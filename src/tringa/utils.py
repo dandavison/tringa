@@ -26,6 +26,11 @@ class async_to_sync_iterator[T](Iterator[T]):
             return t
 
 
+def tee(x: T) -> T:
+    print(x)
+    return x
+
+
 if __name__ == "__main__":
 
     async def my_async_gen():

@@ -33,9 +33,9 @@ class TestResult(NamedTuple):
     artifact_name: str
 
     # run-level fields
-    # TODO: add repo?
-    run_id: str
+    repo: str
     branch: str
+    run_id: str
     sha: str
 
     # suite-level fields
@@ -58,8 +58,9 @@ class TestResult(NamedTuple):
 CREATE_SCHEMA_SQL = """
 CREATE TABLE test (
     artifact_name VARCHAR,
-    run_id VARCHAR,
+    repo VARCHAR,
     branch VARCHAR,
+    run_id VARCHAR,
     sha VARCHAR,
     file VARCHAR,
     suite VARCHAR,
@@ -83,8 +84,9 @@ CREATE INDEX idx_artifact_name ON test(artifact_name);
 INSERT_ROWS_SQL = """
 INSERT INTO test (
     artifact_name,
-    run_id,
+    repo,
     branch,
+    run_id,
     sha,
     file,
     suite,
@@ -99,7 +101,7 @@ INSERT INTO test (
     message,
     text
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 """
 
 

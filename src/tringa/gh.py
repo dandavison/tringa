@@ -47,33 +47,6 @@ async def pr(pr_identifier: Optional[str] = None) -> PR:
     return PR(**json.loads(await _gh(*cmd)))
 
 
-@dataclass
-class Run:
-    run_id: str
-    pr: PR
-    timestamp: str
-    sha: str
-
-
-async def latest_run_in_pr(pr_identifier: Optional[str] = None) -> Run:
-    pr_data = await pr(pr_identifier)
-    branch = pr_data.branch
-    repo = pr_data.repo
-
-    cmd = ["api", f"/repos/{repo}/actions/runs?branch={branch}&per_page=1"]
-    response = json.loads(await _gh(*cmd))
-    if response["total_count"] == 0:
-        raise ValueError(f"No runs found for branch {branch} in repo {repo}")
-
-    run_data = response["workflow_runs"][0]
-    return Run(
-        run_id=str(run_data["id"]),
-        pr=pr_data,
-        timestamp=run_data["created_at"],
-        sha=run_data["head_sha"],
-    )
-
-
 async def _gh(*args: str) -> bytes:
     try:
         process = await asyncio.create_subprocess_exec(

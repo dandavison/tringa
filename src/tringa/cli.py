@@ -12,6 +12,7 @@ from tringa import gh, queries
 from tringa.annotations import flaky
 from tringa.artifact import fetch_and_load_new_artifacts
 from tringa.db import DBConfig, DBType
+from tringa.msg import info
 
 app = typer.Typer(rich_markup_mode="rich")
 
@@ -38,6 +39,13 @@ def global_options(
 
     global _global_options
     _global_options = GlobalOptions(db_config=DBConfig(db_type=db_type, path=db_path))
+
+
+@app.command()
+def dropdb():
+    if _global_options.db_config.path:
+        _global_options.db_config.path.unlink()
+        info("Deleted database at", _global_options.db_config.path)
 
 
 @app.command()

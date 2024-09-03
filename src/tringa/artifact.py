@@ -14,7 +14,7 @@ from rich import progress
 
 from tringa import gh
 from tringa.db import DB, TestResult
-from tringa.msg import debug, info
+from tringa.msg import debug, info, warn
 from tringa.utils import async_to_sync_iterator
 
 
@@ -159,6 +159,9 @@ def _get_db_rows(
 ) -> Iterator[TestResult]:
     empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)
     xml = zip_file.read(file_name).decode()
+    if not xml:
+        warn(f"Skipping empty XML file {file_name}")
+        return
     debug(f"Parsing {file_name}: xml is\n{xml}")
     for test_suite in jup.JUnitXml.fromstring(xml):
         for test_case in test_suite:

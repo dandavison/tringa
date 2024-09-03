@@ -16,6 +16,7 @@ def pr(
     pr_identifier: Annotated[Optional[str], typer.Argument()] = None,
     artifact_name_globs: Optional[list[str]] = None,
     repl: Optional[tringa.repl.Repl] = None,
+    rerun: bool = False,
 ):
     """
     Fetch and analyze test results from a PR.
@@ -29,6 +30,8 @@ def pr(
     Note that if you use --db-path, then the DB in the REPL may have tests from
     other PRs, repos, etc.
     """
+    if repl and rerun:
+        raise typer.BadParameter("--repl and --rerun cannot be used together")
     globals.validate_repl(repl)
 
     pr = asyncio.run(gh.pr(pr_identifier))
@@ -47,5 +50,8 @@ def pr(
                 .execute(tee(queries.last_run_id(pr.repo, pr.branch)))
                 .fetchone()[0]
             )
-            print(db.sql(tee(queries.count_test_results())))
-            print(db.sql(tee(queries.failed_tests_in_run(run_id))))
+            if rerun:
+                asyncio.run(gh.rerun(pr.repo, run_id))
+            else:
+                print(db.sql(tee(queries.count_test_results())))
+                print(db.sql(tee(queries.failed_tests_in_run(run_id))))

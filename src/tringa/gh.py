@@ -47,6 +47,10 @@ async def pr(pr_identifier: Optional[str] = None) -> PR:
     return PR(**json.loads(await _gh(*cmd)))
 
 
+async def rerun(repo: str, run_id: str) -> None:
+    await _gh("run", "rerun", run_id, "-R", repo)
+
+
 async def _gh(*args: str) -> bytes:
     try:
         process = await asyncio.create_subprocess_exec(

@@ -8,48 +8,29 @@ uv tool install git+https://github.com/dandavison/tringa
 
 ### Example usage
 
-Running `tringa` will download artifacts and leave you in an IPython REPL.
-There you'll find a function named `sql`, from the [DuckDB Python API](https://duckdb.org/docs/api/python/overview.html).
-It is connected to a database that has one table, named `test`.
-
+Some commands print to the terminal, 
+By default the database is `duckdb` and persists across invocations.
+The REPL can be a traditional SQL REPL, or a Python session using the [DuckDB Python API](https://duckdb.org/docs/api/python/overview.html).
+The DB has one table, named `test`.
 
 ```
-$ tringa temporalio/sdk-python
+$ tringa --help
 
-In [1]: sql("SELECT column_name, data_type from information_schema.columns where table_name = 'test'")
-Out[1]:
-┌─────────────────┬───────────┐
-│   column_name   │ data_type │
-│     varchar     │  varchar  │
-├─────────────────┼───────────┤
-│ artifact_name   │ VARCHAR   │
-│ run_id          │ VARCHAR   │
-│ branch          │ VARCHAR   │
-│ commit          │ VARCHAR   │
-│ file            │ VARCHAR   │
-│ suite           │ VARCHAR   │
-│ suite_timestamp │ TIMESTAMP │
-│ suite_time      │ FLOAT     │
-│ name            │ VARCHAR   │
-│ classname       │ VARCHAR   │
-│ time            │ FLOAT     │
-│ passed          │ BOOLEAN   │
-│ skipped         │ BOOLEAN   │
-│ message         │ VARCHAR   │
-│ text            │ VARCHAR   │
-├─────────────────┴───────────┤
-│ 15 rows           2 columns │
-└─────────────────────────────┘
+ Usage: tringa [OPTIONS] COMMAND [ARGS]...
 
-
-In [1]: sql("select message from test where passed = false and skipped = false")
-Out[1]:
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                                message                                                 │
-│                                                varchar                                                 │
-├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ AssertionError: assert 'Deliberately failing with next_retry_delay set' != 'Deliberately failing wit…  │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+╭─ Options ──────────────────────────────────────────────────────────────────────────────────────╮
+│ --db-path                   PATH             [default: None]                                   │
+│ --db-type                   [duckdb|sqlite]  [default: duckdb]                                 │
+│ --install-completion                         Install completion for the current shell.         │
+│ --show-completion                            Show completion for the current shell, to copy it │
+│                                              or customize the installation.                    │
+│ --help                                       Show this message and exit.                       │
+╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Commands ─────────────────────────────────────────────────────────────────────────────────────╮
+│ dropdb   Delete the database.                                                                  │
+│ pr       Fetch and analyze test results from a PR.                                             │
+│ repl     Start a REPL to query the database.                                                   │
+╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
 
 ### Required changes to GitHub Actions workflows
@@ -70,44 +51,3 @@ with:
     path: junit-xml
     retention-days: 30
 ```
-
-### Example queries
-
-<details>
-<summary>
-Find failed tests in a single PR
-</summary>
-
-<br>
-
-**TODO**: support limiting by PR instead of branch.
-
-```
-$ uv run tringa temporalio/sdk-python --branch=fix-rpc-error-handling
-
-In [8]: sql("select passed, message from test where name = 'test_rpc_already_exists_error_is_raised' ")
-Out[8]:
-┌─────────┬────────────────────────────────────────────────────────────────────────────────────────────┐
-│ passed  │                                          message                                           │
-│ boolean │                                          varchar                                           │
-├─────────┼────────────────────────────────────────────────────────────────────────────────────────────┤
-│ true    │ NULL                                                                                       │
-│ false   │ AttributeError: '_TimeSkippingClientOutboundInterceptor' object has no attribute '_client' │
-│ true    │ NULL                                                                                       │
-│ true    │ NULL                                                                                       │
-│ false   │ AttributeError: '_TimeSkippingClientOutboundInterceptor' object has no attribute '_client' │
-│ true    │ NULL                                                                                       │
-│ true    │ NULL                                                                                       │
-│ false   │ AttributeError: '_TimeSkippingClientOutboundInterceptor' object has no attribute '_client' │
-│ true    │ NULL                                                                                       │
-│ false   │ AttributeError: '_TimeSkippingClientOutboundInterceptor' object has no attribute '_client' │
-│ true    │ NULL                                                                                       │
-│ false   │ AttributeError: '_TimeSkippingClientOutboundInterceptor' object has no attribute '_client' │
-│ true    │ NULL                                                                                       │
-│ true    │ NULL                                                                                       │
-├─────────┴────────────────────────────────────────────────────────────────────────────────────────────┤
-│ 14 rows                                                                                    2 columns │
-└──────────────────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-</details>

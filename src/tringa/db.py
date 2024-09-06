@@ -11,6 +11,8 @@ import os
 import shlex
 import shutil
 import sqlite3
+import subprocess
+import sys
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -22,7 +24,6 @@ from typing import (
     Iterable,
     Iterator,
     NamedTuple,
-    NoReturn,
     Optional,
     Sequence,
     TypeVar,
@@ -164,17 +165,21 @@ class DB(Generic[Con, Cur], ABC):
             case _:
                 raise ValueError(f"Unsupported DB type: {self}")
 
-    def exec_to_string(self, sql: str, json: bool = False) -> NoReturn:
+    def exec_to_string(self, sql: str, json: bool = False):
         args = ["-json"] if json else []
         executable = self.executable
         cmd = [executable, *args, str(self.path), sql]
         if json and shutil.which("jq"):
             cmd = ["sh", "-c", f"{' '.join(map(shlex.quote, cmd))} | jq"]
             executable = "sh"
-        os.execvp(executable, tee(cmd))
+        self.connection.close()
+        if os.getenv("TRINGA_TESTING"):
+            sys.stdout.write(subprocess.run(cmd, capture_output=True).stdout.decode())
+        else:
+            os.execvp(executable, tee(cmd))
 
-    def exec_to_json(self, sql: str) -> NoReturn:
-        return self.exec_to_string(sql, json=True)
+    def exec_to_json(self, sql: str):
+        self.exec_to_string(sql, json=True)
 
     def create_schema(self) -> None:
         debug(f"{self}: creating schema")

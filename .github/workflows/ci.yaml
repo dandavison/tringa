@@ -5,19 +5,29 @@ on: push
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Install python
         uses: actions/setup-python@v5
 
       - name: Install uv
         run: curl -LsSf https://astral.sh/uv/install.sh | sh
 
+      - name: Install gh
+        uses: dev-hanz-ops/install-gh-cli-action@v0.1.0
+
+      - name: Clone tringa-test repository
+        run: |
+          git clone https://github.com/dandavison/tringa-test /tmp/tringa-test
+          echo "TRINGA_TEST_DIR=/tmp/tringa-test" >> $GITHUB_ENV
+
       - name: Run tests
         run: uv run pytest --junit-xml=test-results.xml
 
-      - name: 'Upload junit-xml artifacts'
+      - name: Upload junit-xml artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:

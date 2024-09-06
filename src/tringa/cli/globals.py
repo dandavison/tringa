@@ -38,5 +38,5 @@ def validate_repl(repl: Optional[tringa.repl.Repl]):
             "The --repl sql option requires --db-path."
             "\n\n"
             "SQL REPLs cannot be used with an in-memory db, since the Python app and the SQL REPL are different processes. "
-            "However, the duckdb Python REPL can be used with an in-memory db, and this combination is the default.",
+            "However, the duckdb Python REPL can be used with an in-memory db.",
         )

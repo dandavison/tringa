@@ -50,7 +50,7 @@ async def pr(pr_identifier: Optional[str] = None) -> PR:
 
 
 async def rerun(repo: str, run_id: str) -> None:
-    await _gh("run", "rerun", run_id, "-R", repo)
+    await _gh("run", "rerun", run_id, "--failed", "-R", repo)
 
 
 async def _gh(*args: str) -> bytes:

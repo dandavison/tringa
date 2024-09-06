@@ -1,13 +1,16 @@
+test:
+	uv run pytest
+
 build: clean
 	uv run pyproject-build --installer uv
 
 clean:
 	rm -rf dist
 
-publish:
+publish: build
 	uv tool run twine upload -r pypi dist/*
 
-publish-test:
+publish-test: build
 	uv tool run twine upload -r testpypi dist/*
 
-.PHONY: build clean publish publish-test
+.PHONY: test build clean publish publish-test

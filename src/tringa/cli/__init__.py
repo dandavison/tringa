@@ -20,16 +20,6 @@ app.callback()(globals.set_options)
 
 
 @app.command()
-def dropdb():
-    """
-    Delete the database.
-    """
-    if globals.options.db_config.path:
-        globals.options.db_config.path.unlink()
-        info("Deleted database at", globals.options.db_config.path)
-
-
-@app.command()
 def repl(
     repos: list[str] = [],
     branch: Optional[str] = None,
@@ -48,6 +38,17 @@ def repl(
 
 
 app.command()(pr.pr)
+
+
+@app.command()
+def dropdb():
+    """
+    Delete the database.
+    """
+    if globals.options.db_config.path:
+        globals.options.db_config.path.unlink()
+        info("Deleted database at", globals.options.db_config.path)
+
 
 warnings.filterwarnings(
     "ignore",

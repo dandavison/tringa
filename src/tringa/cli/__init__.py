@@ -1,3 +1,4 @@
+import asyncio
 import warnings
 from typing import Optional
 
@@ -30,7 +31,7 @@ def dropdb():
 
 @app.command()
 def repl(
-    repos: list[str],
+    repos: list[str] = [],
     branch: Optional[str] = None,
     artifact_name_globs: Optional[list[str]] = None,
     repl: tringa.repl.Repl = tringa.repl.Repl.PYTHON,
@@ -38,6 +39,8 @@ def repl(
     """
     Start a REPL to query the database.
     """
+    if not repos:
+        repos = [asyncio.run(gh.repo()).nameWithOwner]
     globals.validate_repl(repl)
     with globals.options.db_config.connect() as db:
         fetch_and_load_new_artifacts(db, repos, branch, artifact_name_globs)

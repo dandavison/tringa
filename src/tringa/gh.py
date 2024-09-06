@@ -49,6 +49,24 @@ async def pr(pr_identifier: Optional[str] = None) -> PR:
     return PR(**json.loads(await _gh(*cmd)))
 
 
+@dataclass
+class Repo:
+    nameWithOwner: str
+
+
+async def repo(repo_identifier: Optional[str] = None) -> Repo:
+    cmd = [
+        "repo",
+        "view",
+        "--json",
+        "nameWithOwner",
+    ]
+    if repo_identifier is not None:
+        cmd.append(repo_identifier)
+
+    return Repo(**json.loads(await _gh(*cmd)))
+
+
 async def rerun(repo: str, run_id: str) -> None:
     await _gh("run", "rerun", run_id, "--failed", "-R", repo)
 

@@ -10,6 +10,8 @@ import sys
 from dataclasses import dataclass
 from typing import Optional
 
+from tringa.msg import info
+
 
 async def api_bytes(endpoint: str) -> bytes:
     return await _gh("api", endpoint)
@@ -52,10 +54,11 @@ async def rerun(repo: str, run_id: str) -> None:
 
 
 async def _gh(*args: str) -> bytes:
+    cmd = ["gh", *args]
+    info(" ".join(cmd))
     try:
         process = await asyncio.create_subprocess_exec(
-            "gh",
-            *args,
+            *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
         )

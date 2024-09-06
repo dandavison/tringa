@@ -1,4 +1,5 @@
 import asyncio
+import sys
 from queue import Queue
 from threading import Thread
 from typing import AsyncIterator, Iterator, TypeVar
@@ -27,7 +28,7 @@ class async_to_sync_iterator[T](Iterator[T]):
 
 
 def tee(x: T) -> T:
-    print(x)
+    print(x, file=sys.stderr)
     return x
 
 

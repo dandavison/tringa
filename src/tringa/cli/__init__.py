@@ -50,6 +50,21 @@ def dropdb():
         info("Deleted database at", globals.options.db_config.path)
 
 
+@app.command()
+def sql(
+    query: str,
+    repos: list[str] = [],
+):
+    """
+    Execute a SQL query against the database.
+    """
+    if not repos:
+        repos = [asyncio.run(gh.repo()).nameWithOwner]
+    with globals.options.db_config.connect() as db:
+        fetch_and_load_new_artifacts(db, repos)
+        print(db.sql(query))
+
+
 warnings.filterwarnings(
     "ignore",
     message="Attempting to work in a virtualenv. If you encounter problems, please install IPython inside the virtualenv.",

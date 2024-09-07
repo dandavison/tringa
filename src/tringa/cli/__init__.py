@@ -62,7 +62,7 @@ def sql(
         repos = [asyncio.run(gh.repo()).nameWithOwner]
     with globals.options.db_config.connect() as db:
         fetch_and_load_new_artifacts(db, repos)
-        print(db.sql(query))
+        print(db.execute_to_string(query))
 
 
 warnings.filterwarnings(

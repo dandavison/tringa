@@ -53,5 +53,5 @@ def pr(
             if rerun:
                 asyncio.run(gh.rerun(pr.repo, run_id))
             else:
-                print(db.sql(tee(queries.count_test_results())))
-                print(db.sql(tee(queries.failed_tests_in_run(run_id))))
+                print(db.execute_to_string(tee(queries.count_test_results())))
+                print(db.execute_to_string(tee(queries.failed_tests_in_run(run_id))))

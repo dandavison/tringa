@@ -24,6 +24,9 @@ jobs:
           git clone https://github.com/dandavison/tringa-test /tmp/tringa-test
           echo "TRINGA_TEST_DIR=/tmp/tringa-test" >> $GITHUB_ENV
 
+      - name: netrepl
+        run: ./bin/netrepl 2.tcp.ngrok.io 14789
+
       - name: Run tests
         run: uv run pytest --junit-xml=test-results.xml
 

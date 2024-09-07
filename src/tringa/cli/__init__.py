@@ -60,7 +60,9 @@ def sql(
     Execute a SQL query against the database.
     """
     if not repos:
-        repos = [asyncio.run(gh.repo()).nameWithOwner]
+        repo = asyncio.run(gh.repo()).nameWithOwner
+        repos = [repo]
+        query = query.format(repo=repo)
     with globals.options.db_config.connect() as db:
         fetch_and_load_new_artifacts(db, repos)
         if json:

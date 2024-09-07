@@ -7,6 +7,9 @@ separately. These considerations have led to this module abstracting over the
 two backends, which would otherwise be undesirable.
 """
 
+import os
+import shlex
+import shutil
 import sqlite3
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
@@ -19,6 +22,7 @@ from typing import (
     Iterable,
     Iterator,
     NamedTuple,
+    NoReturn,
     Optional,
     Sequence,
     TypeVar,
@@ -27,6 +31,7 @@ from typing import (
 import duckdb
 
 from tringa.msg import debug
+from tringa.utils import tee
 
 
 class TestResult(NamedTuple):
@@ -149,8 +154,27 @@ class DB(Generic[Con, Cur], ABC):
     @abstractmethod
     def cursor(self) -> Cur: ...
 
-    @abstractmethod
-    def execute_to_string(self, sql: str) -> str: ...
+    @property
+    def executable(self) -> str:
+        match self:
+            case DuckDB():
+                return "duckdb"
+            case SqliteDB():
+                return "sqlite3"
+            case _:
+                raise ValueError(f"Unsupported DB type: {self}")
+
+    def exec_to_string(self, sql: str, json: bool = False) -> NoReturn:
+        args = ["-json"] if json else []
+        executable = self.executable
+        cmd = [executable, *args, str(self.path), sql]
+        if json and shutil.which("jq"):
+            cmd = ["sh", "-c", f"{' '.join(map(shlex.quote, cmd))} | jq"]
+            executable = "sh"
+        os.execvp(executable, tee(cmd))
+
+    def exec_to_json(self, sql: str) -> NoReturn:
+        return self.exec_to_string(sql, json=True)
 
     def create_schema(self) -> None:
         debug(f"{self}: creating schema")
@@ -179,9 +203,6 @@ class SqliteDB(DB[sqlite3.Connection, sqlite3.Cursor]):
     def cursor(self) -> sqlite3.Cursor:
         return self.connection.cursor()
 
-    def execute_to_string(self, sql: str) -> str:
-        return str(self.cursor().execute(sql).fetchall())
-
     def insert_rows(self, rows: Iterable[TestResult]) -> None:
         super().insert_rows(rows)
         self.connection.commit()
@@ -199,6 +220,3 @@ class DuckDB(DB[duckdb.DuckDBPyConnection, duckdb.DuckDBPyConnection]):
 
     def cursor(self) -> duckdb.DuckDBPyConnection:
         return self.connection
-
-    def execute_to_string(self, sql: str) -> str:
-        return str(self.connection.sql(sql))

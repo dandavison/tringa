@@ -54,6 +54,7 @@ def dropdb():
 def sql(
     query: str,
     repos: list[str] = [],
+    json: bool = False,
 ):
     """
     Execute a SQL query against the database.
@@ -62,7 +63,10 @@ def sql(
         repos = [asyncio.run(gh.repo()).nameWithOwner]
     with globals.options.db_config.connect() as db:
         fetch_and_load_new_artifacts(db, repos)
-        print(db.execute_to_string(query))
+        if json:
+            db.exec_to_json(query)
+        else:
+            db.exec_to_string(query)
 
 
 warnings.filterwarnings(

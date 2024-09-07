@@ -1,8 +1,11 @@
 import asyncio
+import subprocess
 import sys
 from queue import Queue
 from threading import Thread
 from typing import AsyncIterator, Iterator, TypeVar
+
+from tringa.msg import info
 
 T = TypeVar("T")
 
@@ -27,15 +30,20 @@ class async_to_sync_iterator[T](Iterator[T]):
             return t
 
 
+async def execute(cmd: list[str]) -> bytes:
+    info(" ".join(cmd))
+    process = await asyncio.create_subprocess_exec(
+        *cmd,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, _ = await process.communicate()
+    assert process.returncode is not None
+    if process.returncode != 0:
+        raise subprocess.CalledProcessError(process.returncode, cmd)
+    return stdout
+
+
 def tee(x: T) -> T:
     print(x, file=sys.stderr)
     return x
-
-
-if __name__ == "__main__":
-
-    async def my_async_gen():
-        for i in range(7):
-            yield i
-
-    print(list(async_to_sync_iterator(my_async_gen())))

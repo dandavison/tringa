@@ -11,7 +11,7 @@ def failed_tests_in_run(run_id: str) -> str:
         where passed = false and skipped = false and run_id = '{run_id}'
         group by file, name, passed, flaky
         order by file, flaky desc, max_time desc;
-    """)
+    """).strip()
 
 
 def last_run_id(repo: str, branch: str) -> str:
@@ -20,4 +20,4 @@ def last_run_id(repo: str, branch: str) -> str:
         where repo = '{repo}' and branch = '{branch}'
         order by suite_timestamp desc
         limit 1;
-    """)
+    """).strip()

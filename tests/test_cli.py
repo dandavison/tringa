@@ -10,7 +10,7 @@ runner = CliRunner(mix_stderr=False)
 
 
 def test_sql_query():
-    env = {"TRINGA_TESTING": "1"}
+    env = {}
     if test_dir := os.getenv("TRINGA_TEST_DIR"):
         env["PWD"] = test_dir
         os.chdir(test_dir)

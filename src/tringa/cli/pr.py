@@ -9,6 +9,7 @@ from tringa import queries as queries
 from tringa.annotations import flaky as flaky
 from tringa.artifact import fetch_and_load_new_artifacts
 from tringa.cli import globals
+from tringa.exceptions import TringaQueryException
 from tringa.utils import tee as tee
 
 
@@ -45,11 +46,11 @@ def pr(
         if repl:
             tringa.repl.repl(db, repl)
         else:
-            run_id = (
-                db.cursor()
-                .execute(tee(queries.last_run_id(pr.repo, pr.branch)))
-                .fetchone()[0]
-            )
+            sql = queries.last_run_id(pr.repo, pr.branch)
+            results = db.cursor().execute(tee(sql)).fetchall()
+            if not results:
+                raise TringaQueryException(f"Query returned no results:\n{sql}")
+            [run_id] = results
             if rerun:
                 asyncio.run(gh.rerun(pr.repo, run_id))
             else:

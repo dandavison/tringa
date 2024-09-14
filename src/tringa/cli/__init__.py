@@ -11,6 +11,7 @@ from tringa import queries as queries
 from tringa.annotations import flaky as flaky
 from tringa.artifact import fetch_and_load_new_artifacts
 from tringa.cli import globals, pr
+from tringa.exceptions import TringaException
 from tringa.msg import error, info
 from tringa.utils import tee as tee
 
@@ -80,6 +81,9 @@ warnings.filterwarnings(
 def main():
     try:
         app()
+    except TringaException as e:
+        error(e)
+        exit(1)
     except duckdb.IOException as e:
         error(
             f"{e}\n\nIt looks like you left a tringa REPL open? Connecting to the DB from multiple processes is not supported currently."

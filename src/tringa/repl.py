@@ -2,6 +2,7 @@ import os
 import shutil
 import sqlite3
 from enum import StrEnum
+from typing import NoReturn
 
 import duckdb
 import IPython
@@ -15,7 +16,7 @@ class Repl(StrEnum):
     PYTHON = "python"
 
 
-def repl(db: DB, repl: Repl):
+def repl(db: DB, repl: Repl) -> NoReturn:
     match repl:
         case Repl.SQL:
             sql(db)
@@ -23,7 +24,7 @@ def repl(db: DB, repl: Repl):
             python(db)
 
 
-def sql(db: DB):
+def sql(db: DB) -> NoReturn:
     db.connection.close()
     match db.connection:
         case duckdb.DuckDBPyConnection():
@@ -38,10 +39,12 @@ def sql(db: DB):
                 else:
                     raise err
         case sqlite3.Connection():
-            os.execvp("litecli", ["litecli", "--auto-vertical-output", str(db.path)])
+            return os.execvp(
+                "litecli", ["litecli", "--auto-vertical-output", str(db.path)]
+            )
 
 
-def python(db: DB):
+def python(db: DB) -> NoReturn:
     assert isinstance(
         db.connection, duckdb.DuckDBPyConnection
     ), "The Python REPL is supported for duckdb only"
@@ -61,3 +64,4 @@ def python(db: DB):
         print(q)
     print("https://duckdb.org/docs/api/python/dbapi.html")
     IPython.start_ipython(argv=[], user_ns={"conn": db.connection, "sql": sql})
+    assert False

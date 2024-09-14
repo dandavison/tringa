@@ -5,9 +5,9 @@ https://cli.github.com/manual/
 
 import json
 import sys
-from dataclasses import dataclass
 from typing import Optional
 
+from tringa.models import PR, Repo
 from tringa.utils import execute
 
 
@@ -19,37 +19,17 @@ async def api(endpoint: str) -> dict:
     return json.loads((await api_bytes(endpoint)).decode())
 
 
-@dataclass
-class PR:
-    headRefName: str
-    headRepository: dict
-    headRepositoryOwner: dict
-
-    @property
-    def repo(self) -> str:
-        return f"{self.headRepositoryOwner['login']}/{self.headRepository['name']}"
-
-    @property
-    def branch(self) -> str:
-        return self.headRefName
-
-
 async def pr(pr_identifier: Optional[str] = None) -> PR:
     cmd = [
         "pr",
         "view",
         "--json",
-        "headRefName,headRepository,headRepositoryOwner",
+        "headRefName,headRepository,headRepositoryOwner,url,title",
     ]
     if pr_identifier is not None:
         cmd.append(pr_identifier)
 
     return PR(**json.loads(await _gh(*cmd)))
-
-
-@dataclass
-class Repo:
-    nameWithOwner: str
 
 
 async def repo(repo_identifier: Optional[str] = None) -> Repo:

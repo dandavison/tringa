@@ -19,6 +19,7 @@ from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import (
+    Any,
     Generic,
     Iterable,
     Iterator,
@@ -30,6 +31,7 @@ from typing import (
 
 import duckdb
 
+from tringa.exceptions import TringaQueryException
 from tringa.msg import debug
 from tringa.utils import tee
 
@@ -143,7 +145,7 @@ Cur = TypeVar("Cur", bound=Cursor)
 
 @dataclass
 class DB(Generic[Con, Cur], ABC):
-    connection: Con
+    connection: sqlite3.Connection | duckdb.DuckDBPyConnection
     path: Optional[Path]
 
     @staticmethod
@@ -163,6 +165,17 @@ class DB(Generic[Con, Cur], ABC):
                 return "sqlite3"
             case _:
                 raise ValueError(f"Unsupported DB type: {self}")
+
+    def fetchone(self, sql: str) -> Any:
+        rows = self.cursor().execute(sql).fetchall()
+        if not rows:
+            raise TringaQueryException(f"Query returned no results:\n{sql}")
+        if not len(rows) == 1:
+            raise TringaQueryException(f"Query did not return a single row:\n{sql}")
+        return rows[0]
+
+    def fetchall(self, sql: str) -> list[Any]:
+        return self.cursor().execute(sql).fetchall()
 
     def exec_to_string(self, sql: str, json: bool = False, exec=False) -> str:
         args = ["-json"] if json else []

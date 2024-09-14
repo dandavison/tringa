@@ -1,16 +1,21 @@
 import asyncio
-from typing import Annotated, Optional
+from dataclasses import dataclass
+from typing import Annotated, Optional, Self
 
+import humanize
 import typer
+from rich.console import Console, ConsoleOptions, RenderResult
+from rich.table import Table
+from rich.text import Text
 
 import tringa.repl
-from tringa import gh as gh
-from tringa import queries as queries
+from tringa import gh, queries
 from tringa.annotations import flaky as flaky
 from tringa.artifact import fetch_and_load_new_artifacts
 from tringa.cli import globals
-from tringa.exceptions import TringaQueryException
-from tringa.utils import tee as tee
+from tringa.db import DB
+from tringa.models import Run
+from tringa.rich import print, print_json
 
 
 def pr(
@@ -45,14 +50,65 @@ def pr(
         flaky.annotate(db.cursor())
         if repl:
             tringa.repl.repl(db, repl)
+
+        run = queries.last_run(db, pr)
+
+        if rerun:
+            asyncio.run(gh.rerun(pr.repo, run.id))
+            return
+
+        result = RunResult.from_run(db, run)
+        if globals.options.json:
+            print_json(data=result.to_dict(), sort_keys=True)
         else:
-            sql = queries.last_run_id(pr.repo, pr.branch)
-            results = db.cursor().execute(tee(sql)).fetchall()
-            if not results:
-                raise TringaQueryException(f"Query returned no results:\n{sql}")
-            [run_id] = results
-            if rerun:
-                asyncio.run(gh.rerun(pr.repo, run_id))
-            else:
-                print(db.exec_to_string(tee(queries.count_test_results())))
-                print(db.exec_to_string(tee(queries.failed_tests_in_run(run_id))))
+            print(result)
+
+
+@dataclass
+class RunResult:
+    run: Run
+    failed_tests: list[queries.FailedTestRow]
+
+    @classmethod
+    def from_run(cls, db: DB, run: Run) -> Self:
+        return cls(
+            run=run,
+            failed_tests=queries.failed_tests_in_run(
+                db, {"run_id": run.id, "repo": run.repo}
+            ),
+        )
+
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
+        def make_table():
+            table = Table(show_header=False)
+            if self.run.pr is not None:
+                table.add_row(
+                    "PR",
+                    Text(
+                        self.run.pr.title,
+                        style=f"link {self.run.pr.url}",
+                    ),
+                )
+            table.add_row(
+                "Last run",
+                Text(
+                    humanize.naturaltime(self.run.time), style=f"link {self.run.url()}"
+                ),
+            )
+            table.add_row(
+                "Failed tests", Text(str(len(self.failed_tests)), style="bold")
+            )
+            return table
+
+        yield make_table()
+
+        for test in self.failed_tests:
+            yield f"  • {test.name}"
+
+    def to_dict(self) -> dict:
+        return {
+            "run": self.run.to_dict(),
+            "failed_tests": self.failed_tests,
+        }

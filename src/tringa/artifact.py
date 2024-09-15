@@ -13,6 +13,7 @@ import junitparser.xunit2 as jup
 from rich import progress
 
 from tringa import gh
+from tringa.cli import globals
 from tringa.db import DB, TestResult
 from tringa.msg import debug, info, warn
 from tringa.utils import async_to_sync_iterator
@@ -32,11 +33,9 @@ def fetch_and_load_new_artifacts(
     db: DB,
     repos: list[str],
     branch: Optional[str] = None,
-    artifact_name_globs: Optional[list[str]] = None,
 ):
-    remote_artifacts = _list_remote_artifacts(
-        repos, branch, artifact_name_globs or ["*"]
-    )
+    artifact_name_globs = globals.options.artifact_name_globs or ["*"]
+    remote_artifacts = _list_remote_artifacts(repos, branch, artifact_name_globs)
     artifacts_to_download = _query_for_artifacts_not_in_db(db, remote_artifacts)
     downloaded_artifacts = _download_zip_artifacts(artifacts_to_download)
     msg = f"Downloaded {len(artifacts_to_download)} new artifacts for repos: {repos}"

@@ -1,5 +1,6 @@
 import asyncio
 from dataclasses import dataclass
+from logging import info
 from typing import Annotated, Optional, Self
 
 import humanize
@@ -20,7 +21,6 @@ from tringa.rich import print, print_json
 
 def pr(
     pr_identifier: Annotated[Optional[str], typer.Argument()] = None,
-    artifact_name_globs: Optional[list[str]] = None,
     repl: Optional[tringa.repl.Repl] = None,
     rerun: bool = False,
 ):
@@ -44,9 +44,7 @@ def pr(
     with globals.options.db_config.connect() as db:
         # We do not restrict to the PR branch in order to collect information
         # across branches used to identify flakes.
-        fetch_and_load_new_artifacts(
-            db, [pr.repo], artifact_name_globs=artifact_name_globs
-        )
+        fetch_and_load_new_artifacts(db, [pr.repo])
         flaky.annotate(db.cursor())
         if repl:
             tringa.repl.repl(db, repl)

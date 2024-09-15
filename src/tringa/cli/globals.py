@@ -11,6 +11,7 @@ from tringa.db import DBConfig, DBType
 
 @dataclass
 class GlobalOptions:
+    artifact_name_globs: Optional[list[str]]
     db_config: DBConfig
     json: bool
     verbose: int
@@ -20,6 +21,7 @@ options: GlobalOptions
 
 
 def set_options(
+    artifact_name_globs: Optional[list[str]] = ["*junit*", "*xunit*", "*xml*"],
     db_path: Optional[Path] = None,
     db_type: DBType = DBType.DUCKDB,
     json: bool = False,
@@ -34,6 +36,7 @@ def set_options(
 
     global options
     options = GlobalOptions(
+        artifact_name_globs=artifact_name_globs,
         db_config=DBConfig(db_type=db_type, path=db_path),
         json=json,
         verbose=verbose,

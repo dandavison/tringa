@@ -19,7 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
-tringa = "tringa.cli:main"
+tringa = "tringa.cli.cli:main"
 
 [build-system]
 requires = ["hatchling"]

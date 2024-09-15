@@ -1,88 +1,64 @@
-import asyncio
-import warnings
+from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
-import duckdb
 import typer
+from xdg_base_dirs import xdg_data_home
 
 import tringa.repl
-from tringa import gh
-from tringa.artifact import fetch_and_load_new_artifacts
-from tringa.cli import globals, pr
-from tringa.exceptions import TringaException
-from tringa.msg import error, info
-from tringa.utils import tee as tee
-
-app = typer.Typer(rich_markup_mode="rich")
-
-app.callback()(globals.set_options)
+from tringa.db import DBConfig, DBType
 
 
-@app.command()
-def repl(
-    repos: list[str] = [],
-    branch: Optional[str] = None,
-    repl: tringa.repl.Repl = tringa.repl.Repl.PYTHON,
-):
-    """
-    Start a REPL to query the database.
-    """
-    if not repos:
-        repos = [asyncio.run(gh.repo()).nameWithOwner]
-    globals.validate_repl(repl)
-    with globals.options.db_config.connect() as db:
-        fetch_and_load_new_artifacts(db, repos, branch)
-        tringa.repl.repl(db, repl)
+@dataclass
+class GlobalOptions:
+    artifact_name_globs: Optional[list[str]]
+    db_config: DBConfig
+    json: bool
+    tui: bool
+    verbose: int
 
 
-app.command()(pr.pr)
+options: GlobalOptions
 
 
-@app.command()
-def dropdb():
-    """
-    Delete the database.
-    """
-    if globals.options.db_config.path:
-        globals.options.db_config.path.unlink()
-        info("Deleted database at", globals.options.db_config.path)
-
-
-@app.command()
-def sql(
-    query: str,
-    repos: list[str] = [],
+def set_options(
+    artifact_name_globs: Optional[list[str]] = ["*junit*", "*xunit*", "*xml*"],
+    db_path: Optional[Path] = None,
+    db_type: DBType = DBType.DUCKDB,
     json: bool = False,
+    tui: bool = False,
+    verbose: int = 1,
 ):
-    """
-    Execute a SQL query against the database.
-    """
-    if not repos:
-        repo = asyncio.run(gh.repo()).nameWithOwner
-        repos = [repo]
-        query = query.format(repo=repo)
-    with globals.options.db_config.connect() as db:
-        fetch_and_load_new_artifacts(db, repos)
-        if json:
-            db.exec_to_json(query)
-        else:
-            db.exec_to_string(query)
+    if tui and json:
+        raise typer.BadParameter("--tui and --json cannot be used together")
+
+    if db_path is None:
+        dir = Path(xdg_data_home()) / "tringa"
+        dir.mkdir(parents=True, exist_ok=True)
+        db_path = dir / f"tringa.{db_type.value}"
+    elif db_path == ":memory:":
+        db_path = None
+    elif not db_path.exists():
+        raise typer.BadParameter(f"DB path {db_path} does not exist")
+
+    global options
+    options = GlobalOptions(
+        artifact_name_globs=artifact_name_globs,
+        db_config=DBConfig(db_type=db_type, path=db_path),
+        json=json,
+        tui=tui,
+        verbose=verbose,
+    )
 
 
-warnings.filterwarnings(
-    "ignore",
-    message="Attempting to work in a virtualenv. If you encounter problems, please install IPython inside the virtualenv.",
-)
+set_options()
 
 
-def main():
-    try:
-        app()
-    except TringaException as e:
-        error(e)
-        exit(1)
-    except duckdb.IOException as e:
-        error(
-            f"{e}\n\nIt looks like you left a tringa REPL open? Connecting to the DB from multiple processes is not supported currently."
+def validate_repl(repl: Optional[tringa.repl.Repl]):
+    if repl == tringa.repl.Repl.SQL and not options.db_config.path:
+        raise typer.BadParameter(
+            "The --repl sql option requires --db-path."
+            "\n\n"
+            "SQL REPLs cannot be used with an in-memory db, since the Python app and the SQL REPL are different processes. "
+            "However, the duckdb Python REPL can be used with an in-memory db.",
         )
-        exit(1)

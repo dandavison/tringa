@@ -5,7 +5,7 @@ from rich.console import Console, RenderResult
 from rich.table import Table
 from rich.text import Text
 
-from tringa.cli import globals
+from tringa import cli
 
 if TYPE_CHECKING:
     from tringa.models import RunResult
@@ -49,5 +49,5 @@ def render_run_result(run_result: "RunResult") -> RenderResult:
             yield table
 
     yield make_header()
-    if globals.options.verbose > 1:
+    if cli.options.verbose > 1:
         yield from make_failed_tests()

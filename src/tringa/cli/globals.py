@@ -13,6 +13,7 @@ from tringa.db import DBConfig, DBType
 class GlobalOptions:
     db_config: DBConfig
     json: bool
+    verbose: int
 
 
 options: GlobalOptions
@@ -22,6 +23,7 @@ def set_options(
     db_path: Optional[Path] = None,
     db_type: DBType = DBType.DUCKDB,
     json: bool = False,
+    verbose: int = 1,
 ):
     if db_path is None:
         dir = Path(xdg_data_home()) / "tringa"
@@ -34,6 +36,7 @@ def set_options(
     options = GlobalOptions(
         db_config=DBConfig(db_type=db_type, path=db_path),
         json=json,
+        verbose=verbose,
     )
 
 

@@ -50,11 +50,12 @@ class FailedTestRow(NamedTuple):
     flaky: bool
     runs: int
     max_time: float
+    text: str
 
 
 _failed_tests_in_run = Query[FailedTestsInRunParams, FailedTestRow](
     """
-    select file, name, passed, flaky, count(*) as runs, max(time) as max_time from test
+    select file, name, passed, flaky, count(*) as runs, max(time) as max_time, max(text) as text from test
     where passed = false and skipped = false and run_id = '{run_id}' and repo = '{repo}'
     group by file, name, passed, flaky
     order by file, flaky desc, max_time desc;

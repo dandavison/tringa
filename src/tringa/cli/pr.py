@@ -78,6 +78,12 @@ class RunResult:
             ),
         )
 
+    def to_dict(self) -> dict:
+        return {
+            "run": self.run.to_dict(),
+            "failed_tests": self.failed_tests,
+        }
+
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
@@ -119,10 +125,5 @@ class RunResult:
                 yield table
 
         yield make_header()
-        yield from make_failed_tests()
-
-    def to_dict(self) -> dict:
-        return {
-            "run": self.run.to_dict(),
-            "failed_tests": self.failed_tests,
-        }
+        if globals.options.verbose > 1:
+            yield from make_failed_tests()

@@ -15,6 +15,7 @@ dependencies = [
     "litecli>=1.11.0",
     "humanize>=4.10.0",
     "textual>=0.79.1",
+    "textual-dev>=1.6.1",
 ]
 
 [project.scripts]

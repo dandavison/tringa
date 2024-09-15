@@ -14,6 +14,7 @@ class GlobalOptions:
     artifact_name_globs: Optional[list[str]]
     db_config: DBConfig
     json: bool
+    tui: bool
     verbose: int
 
 
@@ -25,8 +26,12 @@ def set_options(
     db_path: Optional[Path] = None,
     db_type: DBType = DBType.DUCKDB,
     json: bool = False,
+    tui: bool = False,
     verbose: int = 1,
 ):
+    if tui and json:
+        raise typer.BadParameter("--tui and --json cannot be used together")
+
     if db_path is None:
         dir = Path(xdg_data_home()) / "tringa"
         dir.mkdir(parents=True, exist_ok=True)
@@ -41,6 +46,7 @@ def set_options(
         artifact_name_globs=artifact_name_globs,
         db_config=DBConfig(db_type=db_type, path=db_path),
         json=json,
+        tui=tui,
         verbose=verbose,
     )
 

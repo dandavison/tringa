@@ -3,7 +3,7 @@ import os
 
 from typer.testing import CliRunner
 
-from tringa.cli import app
+from tringa.cli.cli import app
 from tringa.msg import error
 
 runner = CliRunner(mix_stderr=False)

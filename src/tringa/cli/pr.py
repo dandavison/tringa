@@ -7,7 +7,7 @@ import tringa.repl
 from tringa import gh, queries
 from tringa.annotations import flaky as flaky
 from tringa.artifact import fetch_and_load_new_artifacts
-from tringa.cli import globals
+from tringa import cli
 from tringa.db import DB
 from tringa.models import Run, RunResult
 from tringa.rich import print, print_json
@@ -33,10 +33,10 @@ def pr(
     """
     if repl and rerun:
         raise typer.BadParameter("--repl and --rerun cannot be used together")
-    globals.validate_repl(repl)
+    cli.validate_repl(repl)
 
     pr = asyncio.run(gh.pr(pr_identifier))
-    with globals.options.db_config.connect() as db:
+    with cli.options.db_config.connect() as db:
         # We do not restrict to the PR branch in order to collect information
         # across branches used to identify flakes.
         fetch_and_load_new_artifacts(db, [pr.repo])
@@ -51,9 +51,9 @@ def pr(
             return
 
         result = make_run_result(db, run)
-        if globals.options.json:
+        if cli.options.json:
             print_json(data=result.to_dict(), sort_keys=True)
-        elif globals.options.tui:
+        elif cli.options.tui:
             tui(run_result=result)
         else:
             print(result)

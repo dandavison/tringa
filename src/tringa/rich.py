@@ -22,17 +22,11 @@ def render_run_result(run_result: "RunResult") -> RenderResult:
             if run_result.run.pr is not None:
                 yield (
                     "PR",
-                    Text(
-                        run_result.run.pr.title,
-                        style=f"link {run_result.run.pr.url}",
-                    ),
+                    f"[link={run_result.run.pr.url}]{run_result.run.pr.title}[/link]",
                 )
             yield (
                 "Last run",
-                Text(
-                    humanize.naturaltime(run_result.run.time),
-                    style=f"link {run_result.run.url()}",
-                ),
+                f"[link={run_result.run.url()}]{humanize.naturaltime(run_result.run.time)}[/link]",
             )
             yield (
                 "Failed tests",

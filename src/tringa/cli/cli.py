@@ -83,6 +83,6 @@ def main():
         exit(1)
     except duckdb.IOException as e:
         error(
-            f"{e}\n\nIt looks like you left a tringa REPL open? Connecting to the DB from multiple processes is not supported currently."
+            f"{e}\n\nIt looks like you left a tringa session open? Connecting to the DB from multiple sessions is not supported currently."
         )
         exit(1)

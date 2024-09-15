@@ -11,6 +11,7 @@ from tringa.cli import globals
 from tringa.db import DB
 from tringa.models import Run, RunResult
 from tringa.rich import print, print_json
+from tringa.tui.tui import tui
 
 
 def pr(
@@ -52,6 +53,8 @@ def pr(
         result = make_run_result(db, run)
         if globals.options.json:
             print_json(data=result.to_dict(), sort_keys=True)
+        elif globals.options.tui:
+            tui(run_result=result)
         else:
             print(result)
 

@@ -33,6 +33,8 @@ def set_options(
         db_path = dir / f"tringa.{db_type.value}"
     elif db_path == ":memory:":
         db_path = None
+    elif not db_path.exists():
+        raise typer.BadParameter(f"DB path {db_path} does not exist")
 
     global options
     options = GlobalOptions(

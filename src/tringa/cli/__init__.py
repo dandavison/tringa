@@ -6,9 +6,7 @@ import duckdb
 import typer
 
 import tringa.repl
-from tringa import gh as gh
-from tringa import queries as queries
-from tringa.annotations import flaky as flaky
+from tringa import gh
 from tringa.artifact import fetch_and_load_new_artifacts
 from tringa.cli import globals, pr
 from tringa.exceptions import TringaException

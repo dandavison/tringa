@@ -8,10 +8,10 @@ or
 from dataclasses import dataclass
 from datetime import datetime
 from textwrap import dedent
-from typing import Any, Mapping, NamedTuple, TypedDict
+from typing import Any, Mapping, TypedDict
 
 from tringa.db import DB
-from tringa.models import PR, Run
+from tringa.models import PR, FailedTestRow, Run
 
 
 @dataclass
@@ -41,16 +41,6 @@ count_test_results = Query[EmptyParams, int]("select count(*) from test;").fetch
 class FailedTestsInRunParams(TypedDict):
     repo: str
     run_id: str
-
-
-class FailedTestRow(NamedTuple):
-    file: str
-    name: str
-    passed: bool
-    flaky: bool
-    runs: int
-    max_time: float
-    text: str
 
 
 _failed_tests_in_run = Query[FailedTestsInRunParams, FailedTestRow](

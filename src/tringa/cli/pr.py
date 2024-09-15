@@ -1,13 +1,7 @@
 import asyncio
-from dataclasses import dataclass
-from logging import info
-from typing import Annotated, Optional, Self
+from typing import Annotated, Optional
 
-import humanize
 import typer
-from rich.console import Console, ConsoleOptions, RenderResult
-from rich.table import Table
-from rich.text import Text
 
 import tringa.repl
 from tringa import gh, queries
@@ -15,7 +9,7 @@ from tringa.annotations import flaky as flaky
 from tringa.artifact import fetch_and_load_new_artifacts
 from tringa.cli import globals
 from tringa.db import DB
-from tringa.models import Run
+from tringa.models import Run, RunResult
 from tringa.rich import print, print_json
 
 
@@ -55,73 +49,17 @@ def pr(
             asyncio.run(gh.rerun(pr.repo, run.id))
             return
 
-        result = RunResult.from_run(db, run)
+        result = make_run_result(db, run)
         if globals.options.json:
             print_json(data=result.to_dict(), sort_keys=True)
         else:
             print(result)
 
 
-@dataclass
-class RunResult:
-    run: Run
-    failed_tests: list[queries.FailedTestRow]
-
-    @classmethod
-    def from_run(cls, db: DB, run: Run) -> Self:
-        return cls(
-            run=run,
-            failed_tests=queries.failed_tests_in_run(
-                db, {"run_id": run.id, "repo": run.repo}
-            ),
-        )
-
-    def to_dict(self) -> dict:
-        return {
-            "run": self.run.to_dict(),
-            "failed_tests": self.failed_tests,
-        }
-
-    def __rich_console__(
-        self, console: Console, options: ConsoleOptions
-    ) -> RenderResult:
-        def make_header():
-            def rows():
-                if self.run.pr is not None:
-                    yield (
-                        "PR",
-                        Text(
-                            self.run.pr.title,
-                            style=f"link {self.run.pr.url}",
-                        ),
-                    )
-                yield (
-                    "Last run",
-                    Text(
-                        humanize.naturaltime(self.run.time),
-                        style=f"link {self.run.url()}",
-                    ),
-                )
-                yield (
-                    "Failed tests",
-                    Text(str(len(self.failed_tests)), style="bold"),
-                )
-
-            table = Table(show_header=False)
-            for row in rows():
-                table.add_row(*row)
-            return table
-
-        def make_failed_tests():
-            def rows():
-                for test in self.failed_tests:
-                    yield (test.name, test.text)
-
-            for name, text in rows():
-                table = Table(name)
-                table.add_row(text)
-                yield table
-
-        yield make_header()
-        if globals.options.verbose > 1:
-            yield from make_failed_tests()
+def make_run_result(db: DB, run: Run) -> RunResult:
+    return RunResult(
+        run=run,
+        failed_tests=queries.failed_tests_in_run(
+            db, {"run_id": run.id, "repo": run.repo}
+        ),
+    )

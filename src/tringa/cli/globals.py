@@ -45,6 +45,9 @@ def set_options(
     )
 
 
+set_options()
+
+
 def validate_repl(repl: Optional[tringa.repl.Repl]):
     if repl == tringa.repl.Repl.SQL and not options.db_config.path:
         raise typer.BadParameter(

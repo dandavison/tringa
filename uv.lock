@@ -763,6 +763,7 @@ dependencies = [
     { name = "rich" },
     { name = "textual" },
     { name = "textual-dev" },
+    { name = "textual-serve" },
     { name = "typer" },
     { name = "xdg-base-dirs" },
 ]
@@ -784,6 +785,7 @@ requires-dist = [
     { name = "rich", specifier = ">=13.8.0" },
     { name = "textual", specifier = ">=0.79.1" },
     { name = "textual-dev", specifier = ">=1.6.1" },
+    { name = "textual-serve", specifier = ">=1.1.1" },
     { name = "typer", specifier = ">=0.12.5" },
     { name = "xdg-base-dirs", specifier = ">=6.0.1" },
 ]

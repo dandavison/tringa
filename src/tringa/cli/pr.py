@@ -81,31 +81,45 @@ class RunResult:
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
-        def make_table():
-            table = Table(show_header=False)
-            if self.run.pr is not None:
-                table.add_row(
-                    "PR",
+        def make_header():
+            def rows():
+                if self.run.pr is not None:
+                    yield (
+                        "PR",
+                        Text(
+                            self.run.pr.title,
+                            style=f"link {self.run.pr.url}",
+                        ),
+                    )
+                yield (
+                    "Last run",
                     Text(
-                        self.run.pr.title,
-                        style=f"link {self.run.pr.url}",
+                        humanize.naturaltime(self.run.time),
+                        style=f"link {self.run.url()}",
                     ),
                 )
-            table.add_row(
-                "Last run",
-                Text(
-                    humanize.naturaltime(self.run.time), style=f"link {self.run.url()}"
-                ),
-            )
-            table.add_row(
-                "Failed tests", Text(str(len(self.failed_tests)), style="bold")
-            )
+                yield (
+                    "Failed tests",
+                    Text(str(len(self.failed_tests)), style="bold"),
+                )
+
+            table = Table(show_header=False)
+            for row in rows():
+                table.add_row(*row)
             return table
 
-        yield make_table()
+        def make_failed_tests():
+            def rows():
+                for test in self.failed_tests:
+                    yield (test.name, test.text)
 
-        for test in self.failed_tests:
-            yield f"  • {test.name}"
+            for name, text in rows():
+                table = Table(name)
+                table.add_row(text)
+                yield table
+
+        yield make_header()
+        yield from make_failed_tests()
 
     def to_dict(self) -> dict:
         return {

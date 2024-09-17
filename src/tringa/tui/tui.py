@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from typing import Optional
 
@@ -7,7 +8,7 @@ from rich.text import Text
 from textual.app import App, ComposeResult, RenderResult
 from textual.binding import Binding
 from textual.css.query import NoMatches
-from textual.widgets import Collapsible, ListItem, ListView, Static, TextArea
+from textual.widgets import Collapsible, ListItem, ListView, RichLog, Static
 from textual.widgets._collapsible import CollapsibleTitle
 
 from tringa.cli.pr import RunResult
@@ -48,15 +49,26 @@ class RunResultSummary(Static):
 
 
 class FailedTest(Collapsible):
-    def __init__(self, test: FailedTestRow, language: Optional[str]):
+    def __init__(self, test: FailedTestRow, language: Optional[str], run: Run):
         title = test.name
         if test.flaky:
             title = f"{title} [bold red]FLAKY[/]"
 
+        text = self.replace_file_paths_with_links(test.text, run)
+
         rich_log = RichLog()
-        rich_log.write(test.text)
+        rich_log.write(text)
 
         super().__init__(rich_log, title=title)
+
+    def replace_file_paths_with_links(self, text: str, run: Run) -> str:
+        def replace_match(match):
+            file_path, line_number = match.groups()
+            url = f"https://github.com/{run.repo}/blob/{run.pr.branch}/{file_path}#L{line_number}"
+            return f"[{match.group(0)}]({url})"
+
+        pattern = r"(\S+\.\w+):(\d+)"
+        return re.sub(pattern, replace_match, text)
 
 
 class RunResultApp(App):
@@ -76,7 +88,7 @@ class RunResultApp(App):
         language = self.run_result.guess_language()
         yield ListView(
             *[
-                ListItem(FailedTest(test, language))
+                ListItem(FailedTest(test, language, self.run_result.run))
                 for test in self.run_result.failed_tests
             ]
         )

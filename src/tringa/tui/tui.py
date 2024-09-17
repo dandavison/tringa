@@ -7,7 +7,7 @@ from rich.text import Text
 from textual.app import App, ComposeResult, RenderResult
 from textual.binding import Binding
 from textual.css.query import NoMatches
-from textual.widgets import Collapsible, ListItem, ListView, Static, TextArea
+from textual.widgets import Collapsible, ListItem, ListView, RichLog, Static
 from textual.widgets._collapsible import CollapsibleTitle
 
 from tringa.cli.pr import RunResult
@@ -52,9 +52,11 @@ class FailedTest(Collapsible):
         title = test.name
         if test.flaky:
             title = f"{title} [bold red]FLAKY[/]"
-        super().__init__(
-            TextArea(test.text, language=language, read_only=True), title=title
-        )
+
+        rich_log = RichLog()
+        rich_log.write(test.text)
+
+        super().__init__(rich_log, title=title)
 
 
 class RunResultApp(App):

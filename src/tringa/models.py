@@ -19,6 +19,7 @@ class PR:
     headRepositoryOwner: dict
     url: str
     title: str
+    number: int
 
     @property
     def repo(self) -> str:

@@ -24,7 +24,7 @@ async def pr(pr_identifier: Optional[str] = None) -> PR:
         "pr",
         "view",
         "--json",
-        "headRefName,headRepository,headRepositoryOwner,url,title",
+        "headRefName,headRepository,headRepositoryOwner,url,title,number",
     ]
     if pr_identifier is not None:
         cmd.append(pr_identifier)

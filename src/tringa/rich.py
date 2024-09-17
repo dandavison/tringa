@@ -17,20 +17,26 @@ print_json = console.print_json
 
 
 def render_run_result(run_result: "RunResult") -> RenderResult:
+    rr = run_result
+    pr = rr.run.pr
+
     def make_header():
         def rows():
-            if run_result.run.pr is not None:
-                yield (
-                    "PR",
-                    f"[link={run_result.run.pr.url}]{run_result.run.pr.title}[/link]",
-                )
+            yield (
+                "Repo",
+                f"[link=https://github.com/{rr.run.repo}]{rr.run.repo}[/link]",
+            )
+            yield (
+                "PR",
+                f"[link={pr.url}]#{pr.number} {pr.title}[/link]",
+            )
             yield (
                 "Last run",
-                f"[link={run_result.run.url()}]{humanize.naturaltime(run_result.run.time)}[/link]",
+                f"[link={rr.run.url()}]{humanize.naturaltime(rr.run.time)}[/link]",
             )
             yield (
                 "Failed tests",
-                Text(str(len(run_result.failed_tests)), style="bold"),
+                Text(str(len(rr.failed_tests)), style="bold"),
             )
 
         table = Table(show_header=False)

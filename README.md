@@ -15,23 +15,9 @@ The DB has one table, named `test`.
 
 ```
 $ tringa --help
-
- Usage: tringa [OPTIONS] COMMAND [ARGS]...
-
-╭─ Options ──────────────────────────────────────────────────────────────────────────────────────╮
-│ --db-path                   PATH             [default: None]                                   │
-│ --db-type                   [duckdb|sqlite]  [default: duckdb]                                 │
-│ --install-completion                         Install completion for the current shell.         │
-│ --show-completion                            Show completion for the current shell, to copy it │
-│                                              or customize the installation.                    │
-│ --help                                       Show this message and exit.                       │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ─────────────────────────────────────────────────────────────────────────────────────╮
-│ dropdb   Delete the database.                                                                  │
-│ pr       Fetch and analyze test results from a PR.                                             │
-│ repl     Start a REPL to query the database.                                                   │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 ```
+<img width="856" alt="image" src="https://github.com/user-attachments/assets/e763b96a-f879-4d3a-985a-11b37db949cb">
+
 
 ### Required changes to GitHub Actions workflows
 
@@ -51,3 +37,9 @@ with:
     path: junit-xml
     retention-days: 30
 ```
+
+### TUI
+
+`tringa --tui pr` brings up a TUI interface. This is under development: currently you can reveal individual test failures.
+
+<img width="1295" alt="image" src="https://github.com/user-attachments/assets/765bd3f3-f333-4c23-8ecf-0326097469dd">

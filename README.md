@@ -8,30 +8,66 @@ uv tool install git+https://github.com/dandavison/tringa
 
 ### Example usage
 
-Some commands print to the terminal, 
+```
+$ tringa --help
+```
+<img width="856" alt="image" src="https://github.com/user-attachments/assets/e763b96a-f879-4d3a-985a-11b37db949cb">
+
+Some commands print to the terminal, some bring up a TUI, and some bring up a SQL REPL for interactive queries.
 By default the database is `duckdb` and persists across invocations.
 The REPL can be a traditional SQL REPL, or a Python session using the [DuckDB Python API](https://duckdb.org/docs/api/python/overview.html).
+
+### SQL REPL
+
 The DB has one table, named `test`.
 
 ```
-$ tringa --help
+D SELECT name, type FROM pragma_table_info('test');
+┌─────────────────┬───────────┐
+│      name       │   type    │
+│     varchar     │  varchar  │
+├─────────────────┼───────────┤
+│ artifact_name   │ VARCHAR   │
+│ repo            │ VARCHAR   │
+│ branch          │ VARCHAR   │
+│ run_id          │ VARCHAR   │
+│ sha             │ VARCHAR   │
+│ file            │ VARCHAR   │
+│ suite           │ VARCHAR   │
+│ suite_timestamp │ TIMESTAMP │
+│ suite_time      │ FLOAT     │
+│ name            │ VARCHAR   │
+│ classname       │ VARCHAR   │
+│ time            │ FLOAT     │
+│ passed          │ BOOLEAN   │
+│ skipped         │ BOOLEAN   │
+│ flaky           │ BOOLEAN   │
+│ message         │ VARCHAR   │
+│ text            │ VARCHAR   │
+├─────────────────┴───────────┤
+│ 17 rows           2 columns │
+└─────────────────────────────┘
 
- Usage: tringa [OPTIONS] COMMAND [ARGS]...
-
-╭─ Options ──────────────────────────────────────────────────────────────────────────────────────╮
-│ --db-path                   PATH             [default: None]                                   │
-│ --db-type                   [duckdb|sqlite]  [default: duckdb]                                 │
-│ --install-completion                         Install completion for the current shell.         │
-│ --show-completion                            Show completion for the current shell, to copy it │
-│                                              or customize the installation.                    │
-│ --help                                       Show this message and exit.                       │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭─ Commands ─────────────────────────────────────────────────────────────────────────────────────╮
-│ dropdb   Delete the database.                                                                  │
-│ pr       Fetch and analyze test results from a PR.                                             │
-│ repl     Start a REPL to query the database.                                                   │
-╰────────────────────────────────────────────────────────────────────────────────────────────────╯
+D select artifact_name, name from test where passed = false and skipped = false and repo = 'temporalio/cli';
+┌───────────────────────────────────────────┬─────────────────────────────────────────────────────────┐
+│               artifact_name               │                          name                           │
+│                  varchar                  │                         varchar                         │
+├───────────────────────────────────────────┼─────────────────────────────────────────────────────────┤
+│ junit-xml--10631569269--1--ubuntu-latest  │ TestSharedServerSuite/TestWorkflow_Update_Execute       │
+│ junit-xml--10631569269--1--ubuntu-latest  │ TestSharedServerSuite/TestWorkflow_Update_Start         │
+│ junit-xml--10631569269--1--ubuntu-latest  │ TestSharedServerSuite                                   │
+│ junit-xml--10884926916--1--windows-latest │ TestServer_StartDev_ConcurrentStarts                    │
+│ junit-xml--10885937402--1--ubuntu-arm     │ TestSharedServerSuite/TestActivity_Complete             │
+│ junit-xml--10885937402--1--ubuntu-arm     │ TestSharedServerSuite/TestWorkflow_Reset_ReapplyExclude │
+│ junit-xml--10885937402--1--ubuntu-arm     │ TestSharedServerSuite                                   │
+└───────────────────────────────────────────┴─────────────────────────────────────────────────────────┘
 ```
+
+### TUI
+
+`tringa --tui pr` brings up a TUI interface. This is under development: currently you can reveal individual test failures.
+
+<img width="1295" alt="image" src="https://github.com/user-attachments/assets/765bd3f3-f333-4c23-8ecf-0326097469dd">
 
 ### Required changes to GitHub Actions workflows
 

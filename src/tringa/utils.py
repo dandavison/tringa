@@ -37,10 +37,12 @@ async def execute(cmd: list[str]) -> bytes:
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
-    stdout, _ = await process.communicate()
+    stdout, stderr = await process.communicate()
     assert process.returncode is not None
     if process.returncode != 0:
-        raise subprocess.CalledProcessError(process.returncode, cmd)
+        raise subprocess.CalledProcessError(
+            process.returncode, " ".join(cmd), stdout, stderr
+        )
     return stdout
 
 

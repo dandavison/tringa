@@ -2,14 +2,15 @@ import asyncio
 from typing import Annotated, Optional
 
 import typer
+from rich.syntax import Syntax
 
 import tringa.repl
-from tringa import gh, queries
+from tringa import cli, gh, queries
 from tringa.annotations import flaky as flaky
 from tringa.artifact import fetch_and_load_new_artifacts
-from tringa import cli
 from tringa.db import DB
 from tringa.models import Run, RunResult
+from tringa.msg import info
 from tringa.rich import print, print_json
 from tringa.tui.tui import tui
 
@@ -42,6 +43,13 @@ def pr(
         fetch_and_load_new_artifacts(db, [pr.repo])
         flaky.annotate(db.cursor())
         if repl:
+            info("To query tests from this PR:")
+            print(
+                Syntax(
+                    f"SELECT * FROM test WHERE repo = '{pr.repo}' AND branch = '{pr.branch}';",
+                    "sql",
+                )
+            )
             tringa.repl.repl(db, repl)
 
         run = queries.last_run(db, pr)

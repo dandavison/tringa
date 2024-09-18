@@ -1,5 +1,6 @@
+from collections import defaultdict
 from datetime import datetime
-from typing import Optional
+from typing import Iterator, Optional
 
 import humanize
 from rich.table import Table
@@ -47,11 +48,11 @@ class RunResultSummary(Static):
         return table
 
 
-class FailedTest(Collapsible):
+class FailedTestWidget(Collapsible):
     def __init__(self, test: FailedTestRow, language: Optional[str]):
         title = test.name
         if test.flaky:
-            title = f"{title} [bold red]FLAKY[/]"
+            title = f"{title} [bold yellow]FLAKY[/]"
 
         rich_log = RichLog()
         rich_log.write(test.text)
@@ -74,10 +75,25 @@ class RunResultApp(App):
     def compose(self) -> ComposeResult:
         yield RunResultSummary(self.run_result)
         language = self.run_result.guess_language()
+
+        def per_file_results() -> Iterator[tuple[str, ListView]]:
+            tests_by_file = defaultdict(list[FailedTestRow])
+            for test in self.run_result.failed_tests:
+                tests_by_file[test.file].append(test)
+            for file, tests in sorted(tests_by_file.items()):
+                name = file.removesuffix(".xml")
+                n_flaky = sum(1 for test in tests if test.flaky)
+                yield (
+                    f"{name} [bold red]{len(tests)} failed[/] ([bold yellow]{n_flaky} flaky[/])",
+                    ListView(
+                        *[ListItem(FailedTestWidget(test, language)) for test in tests]
+                    ),
+                )
+
         yield ListView(
             *[
-                ListItem(FailedTest(test, language))
-                for test in self.run_result.failed_tests
+                ListItem(Collapsible(list_view, title=title))
+                for title, list_view in per_file_results()
             ]
         )
 

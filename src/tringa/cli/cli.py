@@ -43,9 +43,15 @@ def dropdb():
     """
     Delete the database.
     """
-    if cli.options.db_config.path:
-        cli.options.db_config.path.unlink()
-        info("Deleted database at", cli.options.db_config.path)
+    path = cli.options.db_config.path
+    if not path:
+        error("No database path configured")
+        exit(1)
+    if not path.exists():
+        error("Path does not exist:", path)
+        exit(1)
+    path.unlink()
+    info("Deleted database at", path)
 
 
 @app.command()
@@ -82,7 +88,5 @@ def main():
         error(e)
         exit(1)
     except duckdb.IOException as e:
-        error(
-            f"{e}\n\nIt looks like you left a tringa session open? Connecting to the DB from multiple sessions is not supported currently."
-        )
+        error(e)
         exit(1)

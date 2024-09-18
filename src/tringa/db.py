@@ -30,6 +30,7 @@ from typing import (
 )
 
 import duckdb
+import pandas as pd
 
 from tringa.exceptions import TringaQueryException
 from tringa.msg import debug
@@ -237,3 +238,11 @@ class DuckDB(DB[duckdb.DuckDBPyConnection, duckdb.DuckDBPyConnection]):
 
     def cursor(self) -> duckdb.DuckDBPyConnection:
         return self.connection
+
+    def insert_rows(self, rows: Iterable[TestResult]) -> None:
+        n_rows = str(len(rows)) if isinstance(rows, Sequence) else "<iterator>"
+        df = pd.DataFrame(rows)
+        if df.empty:
+            return
+        debug(f"Inserting {n_rows} rows into {self}")
+        self.connection.execute("insert into test select * from df")

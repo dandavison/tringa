@@ -1,7 +1,5 @@
 import asyncio
-import os
 from collections import namedtuple
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from fnmatch import fnmatch
 from io import BytesIO
@@ -10,7 +8,6 @@ from typing import AsyncIterator, Iterator, Optional, TypedDict
 from zipfile import ZipFile
 
 import junitparser.xunit2 as jup
-from rich import progress
 
 from tringa import cli, gh
 from tringa.db import DB, TestResult
@@ -128,28 +125,16 @@ def _load_xml_from_zip_artifacts(
     artifacts: Iterator[tuple[Artifact, bytes]],
 ):
     info(f"Loading artifacts into {db}")
-    # Parsing the XML is slow, and doing it in parallel is a significant
-    # optimization. OTOH we write to the DB from the main thread only.
-    zip_files = []
-    futures = []
-    with ThreadPoolExecutor(max_workers=os.cpu_count() or 1) as executor:
+
+    def rows() -> Iterator[TestResult]:
         for artifact, zip_bytes in artifacts:
-            zip_file = ZipFile(BytesIO(zip_bytes))
-            for file_name in zip_file.namelist():
-                if file_name.endswith(".xml"):
-                    futures.append(
-                        executor.submit(_parse_xml_file, file_name, zip_file, artifact)
-                    )
-            zip_files.append(zip_file)
-        rows = []
-        progress.track(
-            [rows.extend(f.result()) for f in as_completed(futures)],
-            total=len(futures),
-        )
-        if rows:
-            db.insert_rows(rows)
-    for zip_file in zip_files:
-        zip_file.close()
+            with ZipFile(BytesIO(zip_bytes)) as zip_file:
+                for file_name in zip_file.namelist():
+                    if file_name.endswith(".xml"):
+                        yield from _parse_xml_file(file_name, zip_file, artifact)
+
+    info("Inserting test rows into db")
+    db.insert_rows(rows())
 
 
 def _parse_xml_file(

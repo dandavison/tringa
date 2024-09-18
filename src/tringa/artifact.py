@@ -12,8 +12,7 @@ from zipfile import ZipFile
 import junitparser.xunit2 as jup
 from rich import progress
 
-from tringa import gh
-from tringa import cli
+from tringa import cli, gh
 from tringa.db import DB, TestResult
 from tringa.msg import debug, info, warn
 from tringa.utils import async_to_sync_iterator
@@ -139,7 +138,7 @@ def _load_xml_from_zip_artifacts(
             for file_name in zip_file.namelist():
                 if file_name.endswith(".xml"):
                     futures.append(
-                        executor.submit(_get_db_rows, artifact, zip_file, file_name)
+                        executor.submit(_parse_xml_file, file_name, zip_file, artifact)
                     )
             zip_files.append(zip_file)
         rows = []
@@ -153,8 +152,8 @@ def _load_xml_from_zip_artifacts(
         zip_file.close()
 
 
-def _get_db_rows(
-    artifact: Artifact, zip_file: ZipFile, file_name: str
+def _parse_xml_file(
+    file_name: str, zip_file: ZipFile, artifact: Artifact
 ) -> Iterator[TestResult]:
     empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)
     xml = zip_file.read(file_name).decode()

@@ -12,8 +12,7 @@ from zipfile import ZipFile
 import junitparser.xunit2 as jup
 from rich import progress
 
-from tringa import gh
-from tringa import cli
+from tringa import cli, gh
 from tringa.db import DB, TestResult
 from tringa.msg import debug, info, warn
 from tringa.utils import async_to_sync_iterator
@@ -184,5 +183,5 @@ def _get_db_rows(
                     passed=test_case.is_passed,
                     skipped=test_case.is_skipped,
                     message=result.message,
-                    text=result.text,
+                    text=result.text[:100_000] if result.text else "",
                 )

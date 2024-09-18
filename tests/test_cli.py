@@ -17,8 +17,8 @@ def test_sql_query():
     result = runner.invoke(
         app,
         [
-            "sql",
             "--json",
+            "sql",
             "select name from test where passed = false and repo='dandavison/tringa-test'",
         ],
         env=env,

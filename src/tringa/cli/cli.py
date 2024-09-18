@@ -22,7 +22,7 @@ app.callback()(cli.set_options)
 def repl(
     repos: list[str] = [],
     branch: Optional[str] = None,
-    repl: tringa.repl.Repl = tringa.repl.Repl.PYTHON,
+    repl: tringa.repl.Repl = tringa.repl.Repl.SQL,
 ):
     """
     Start a REPL to query the database.
@@ -58,7 +58,6 @@ def dropdb():
 def sql(
     query: str,
     repos: list[str] = [],
-    json: bool = False,
 ):
     """
     Execute a SQL query against the database.
@@ -69,10 +68,11 @@ def sql(
         query = query.format(repo=repo)
     with cli.options.db_config.connect() as db:
         fetch_and_load_new_artifacts(db, repos)
-        if json:
-            db.exec_to_json(query)
+        rel = db.connection.sql(query)
+        if cli.options.json:
+            print(rel.df().to_json(orient="records", indent=2))
         else:
-            db.exec_to_string(query)
+            print(rel)
 
 
 warnings.filterwarnings(

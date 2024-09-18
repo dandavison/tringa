@@ -41,7 +41,7 @@ def pr(
         # We do not restrict to the PR branch in order to collect information
         # across branches used to identify flakes.
         fetch_and_load_new_artifacts(db, [pr.repo])
-        flaky.annotate(db.cursor())
+        flaky.annotate(db.connection)
         if repl:
             info("To query tests from this PR:")
             print(

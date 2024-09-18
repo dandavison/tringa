@@ -117,24 +117,6 @@ wheels = [
 ]
 
 [[package]]
-name = "cli-helpers"
-version = "2.3.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "configobj" },
-    { name = "tabulate", extra = ["widechars"] },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/ab/de/79529bd31c1664415d9554c0c5029f2137afe9808f35637bbcca977d9022/cli_helpers-2.3.1.tar.gz", hash = "sha256:b82a8983ceee21f180e6fd0ddb7ca8dae43c40e920951e3817f996ab204dae6a", size = 36246 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/f1/c5/2deaab90ce50f2e92aaff6e80c4e06a7160f97ae03a3835ae9121a54b428/cli_helpers-2.3.1-py3-none-any.whl", hash = "sha256:208a24a44f41a8289b742867197450a002967a5a67c779911c0b8487b1c16b83", size = 19444 },
-]
-
-[package.optional-dependencies]
-styles = [
-    { name = "pygments" },
-]
-
-[[package]]
 name = "click"
 version = "8.1.7"
 source = { registry = "https://pypi.org/simple" }
@@ -153,18 +135,6 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/d8/53/6f443c9a4a8358a93a6792e2acffb9d9d5cb0a5cfd8802644b7b1c9a02e4/colorama-0.4.6.tar.gz", hash = "sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44", size = 27697 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d1/d6/3965ed04c63042e047cb6a3e6ed1a63a35087b6a609aa3a15ed8ac56c221/colorama-0.4.6-py2.py3-none-any.whl", hash = "sha256:4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6", size = 25335 },
-]
-
-[[package]]
-name = "configobj"
-version = "5.0.8"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "six" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/cb/87/17d4c6d634c044ab08b11c0cd2a8a136d103713d438f8792d7be2c5148fb/configobj-5.0.8.tar.gz", hash = "sha256:6f704434a07dc4f4dc7c9a745172c1cad449feb548febd9f7fe362629c627a97", size = 38012 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d3/bb/d10e531b297dd1d46f6b1fd11d018247af9f2d460037554bb7bb9011c6ac/configobj-5.0.8-py2.py3-none-any.whl", hash = "sha256:a7a8c6ab7daade85c3f329931a807c8aee750a2494363934f8ea84d8a54c87ea", size = 36180 },
 ]
 
 [[package]]
@@ -328,23 +298,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/2a/ae/bb56c6828e4797ba5a4821eec7c43b8bf40f69cda4d4f5f8c8a2810ec96a/linkify-it-py-2.0.3.tar.gz", hash = "sha256:68cda27e162e9215c17d786649d1da0021a451bdc436ef9e0fa0ba5234b9b048", size = 27946 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/04/1e/b832de447dee8b582cac175871d2f6c3d5077cc56d5575cadba1fd1cccfa/linkify_it_py-2.0.3-py3-none-any.whl", hash = "sha256:6bcbc417b0ac14323382aef5c5192c0075bf8a9d6b41820a2b66371eac6b6d79", size = 19820 },
-]
-
-[[package]]
-name = "litecli"
-version = "1.11.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cli-helpers", extra = ["styles"] },
-    { name = "click" },
-    { name = "configobj" },
-    { name = "prompt-toolkit" },
-    { name = "pygments" },
-    { name = "sqlparse" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/2e/9e/016649bac18c4a41fb903e936d51f3077c3ff56363ef9da49573df74117e/litecli-1.11.0.tar.gz", hash = "sha256:616de68d87d2bb18bf5e669eb6b5a68d5b937ea81a8ad439c1f51a25d1c81f56", size = 60962 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4e/12/d480cfd0045917f2703a505f3b06fed4bfe6d535797c52fa1795647f8f8b/litecli-1.11.0-py2.py3-none-any.whl", hash = "sha256:4439fd95b746b81f9f5d698e69e1f0ec38d932dfb3f772ec127a0eebf0ea5bf5", size = 48884 },
 ]
 
 [[package]]
@@ -734,15 +687,6 @@ wheels = [
 ]
 
 [[package]]
-name = "sqlparse"
-version = "0.5.1"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/73/82/dfa23ec2cbed08a801deab02fe7c904bfb00765256b155941d789a338c68/sqlparse-0.5.1.tar.gz", hash = "sha256:bb6b4df465655ef332548e24f08e205afc81b9ab86cb1c45657a7ff173a3a00e", size = 84502 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/5d/a5/b2860373aa8de1e626b2bdfdd6df4355f0565b47e51f7d0c54fe70faf8fe/sqlparse-0.5.1-py3-none-any.whl", hash = "sha256:773dcbf9a5ab44a090f3441e2180efe2560220203dc2f8c0b0fa141e18b505e4", size = 44156 },
-]
-
-[[package]]
 name = "stack-data"
 version = "0.6.3"
 source = { registry = "https://pypi.org/simple" }
@@ -754,20 +698,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/28/e3/55dcc2cfbc3ca9c29519eb6884dd1415ecb53b0e934862d3559ddcb7e20b/stack_data-0.6.3.tar.gz", hash = "sha256:836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9", size = 44707 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f1/7b/ce1eafaf1a76852e2ec9b22edecf1daa58175c090266e9f6c64afcd81d91/stack_data-0.6.3-py3-none-any.whl", hash = "sha256:d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695", size = 24521 },
-]
-
-[[package]]
-name = "tabulate"
-version = "0.9.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ec/fe/802052aecb21e3797b8f7902564ab6ea0d60ff8ca23952079064155d1ae1/tabulate-0.9.0.tar.gz", hash = "sha256:0095b12bf5966de529c0feb1fa08671671b3368eec77d7ef7ab114be2c068b3c", size = 81090 }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/40/44/4a5f08c96eb108af5cb50b41f76142f0afa346dfa99d5296fe7202a11854/tabulate-0.9.0-py3-none-any.whl", hash = "sha256:024ca478df22e9340661486f85298cff5f6dcdba14f3813e8830015b9ed1948f", size = 35252 },
-]
-
-[package.optional-dependencies]
-widechars = [
-    { name = "wcwidth" },
 ]
 
 [[package]]
@@ -836,7 +766,6 @@ dependencies = [
     { name = "humanize" },
     { name = "ipython" },
     { name = "junitparser" },
-    { name = "litecli" },
     { name = "pandas" },
     { name = "pytest" },
     { name = "rich" },
@@ -859,7 +788,6 @@ requires-dist = [
     { name = "humanize", specifier = ">=4.10.0" },
     { name = "ipython", specifier = ">=8.26.0" },
     { name = "junitparser", specifier = ">=3.1.2" },
-    { name = "litecli", specifier = ">=1.11.0" },
     { name = "pandas", specifier = ">=2.2.2" },
     { name = "pytest", specifier = ">=8.3.2" },
     { name = "rich", specifier = ">=13.8.0" },

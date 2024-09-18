@@ -14,13 +14,11 @@ TODO: we would like the definition to capture "has failed on main".
 from collections import defaultdict
 from typing import cast
 
-from tringa.db import Cursor
+from duckdb import DuckDBPyConnection
 
 
-def annotate(cursor: Cursor):
-    tests = cursor.execute(
-        "select classname, name, passed, branch from test"
-    ).fetchall()
+def annotate(conn: DuckDBPyConnection):
+    tests = conn.execute("select classname, name, passed, branch from test").fetchall()
     tests = cast(list[tuple[str, str, bool, str]], tests)
     fail_branches, flaky = defaultdict(set), set()
     for classname, name, passed, branch in tests:
@@ -33,6 +31,6 @@ def annotate(cursor: Cursor):
     if any(flaky):
         # TODO: are we really going to write computed values to the db? It might be
         # nice to add the annotations in some way that is not persisted.
-        cursor.executemany(
+        conn.executemany(
             "UPDATE test SET flaky = true WHERE classname = ? AND name = ?", list(flaky)
         )

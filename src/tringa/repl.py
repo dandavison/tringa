@@ -1,10 +1,8 @@
 import os
 import shutil
-import sqlite3
 from enum import StrEnum
 from typing import NoReturn
 
-import duckdb
 import IPython
 
 from tringa.db import DB
@@ -26,28 +24,19 @@ def repl(db: DB, repl: Repl) -> NoReturn:
 
 def sql(db: DB) -> NoReturn:
     db.connection.close()
-    match db.connection:
-        case duckdb.DuckDBPyConnection():
-            try:
-                os.execvp("duckdb", ["duckdb", str(db.path)])
-            except FileNotFoundError as err:
-                if not shutil.which("duckdb"):
-                    fatal(
-                        "Install the duckdb CLI to use the duckdb SQL REPL: https://duckdb.org/docs/installation/.",
-                        "Alternatively, use --dbtype sqlite or --repl python.",
-                    )
-                else:
-                    raise err
-        case sqlite3.Connection():
-            return os.execvp(
-                "litecli", ["litecli", "--auto-vertical-output", str(db.path)]
+    try:
+        os.execvp("duckdb", ["duckdb", str(db.path)])
+    except FileNotFoundError as err:
+        if not shutil.which("duckdb"):
+            fatal(
+                "Install the duckdb CLI to use the duckdb SQL REPL: https://duckdb.org/docs/installation/.",
+                "Alternatively, use --repl python.",
             )
+        else:
+            raise err
 
 
 def python(db: DB) -> NoReturn:
-    assert isinstance(
-        db.connection, duckdb.DuckDBPyConnection
-    ), "The Python REPL is supported for duckdb only"
     sql = db.connection.sql
     schema = sql(
         "select column_name, data_type from information_schema.columns where table_name = 'test'"

@@ -16,10 +16,11 @@ from tringa.models import PR, FailedTestRow, Run
 
 @dataclass
 class Query[P: Mapping[str, Any], R]:
+    # TODO: types
     sql: str
 
     def fetchall(self, db: DB, params: P) -> list[R]:
-        return db.fetchall(self.sql.format(**params))
+        return db.connection.execute(self.sql.format(**params)).fetchall()
 
     def fetchone(self, db: DB, params: P) -> R:
         return db.fetchone(self.sql.format(**params))

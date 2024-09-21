@@ -27,7 +27,9 @@ def connect(
         df = db.connection.execute(query).df()
 
         with tempfile.NamedTemporaryFile() as f:
-            with DBConfig(Path(f.name)).connect() as db2:
+            path = Path(f.name)
+            path.unlink()
+            with DBConfig(path).connect() as db2:
                 db2.connection.execute("insert into test select * from df")
                 flaky.annotate(db.connection, db2.connection)
                 yield db2

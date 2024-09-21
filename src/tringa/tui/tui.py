@@ -122,12 +122,12 @@ class RunResultApp(App):
                 collapsible.collapsed = not collapsible.collapsed
 
     def action_show_test_output(self) -> None:
-        self._set_test_output_visible(True)
+        self._set_test_output_visibility(True)
 
     def action_hide_test_output(self) -> None:
-        self._set_test_output_visible(False)
+        self._set_test_output_visibility(False)
 
-    def _set_test_output_visible(self, visible: bool) -> None:
+    def _set_test_output_visibility(self, visible: bool) -> None:
         if focused := self.focused:
             if isinstance(focused, ListView):
                 if list_item := focused.highlighted_child:

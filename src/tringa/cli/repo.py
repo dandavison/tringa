@@ -1,5 +1,5 @@
 import asyncio
-from typing import NoReturn, Optional
+from typing import Annotated, NoReturn, Optional
 
 import typer
 
@@ -17,8 +17,29 @@ app = typer.Typer(rich_markup_mode="rich")
 
 @app.command()
 def repl(
-    repo: Optional[str] = None, repl: Optional[tringa.repl.Repl] = None
+    repo: Annotated[
+        Optional[str],
+        typer.Option(
+            help=(
+                "Repository for which tests will be loaded into the DB, e.g. `--repo dandavison/tringa`. "
+                "Defaults to the current repository."
+            ),
+        ),
+    ] = None,
+    repl: Annotated[
+        Optional[tringa.repl.Repl],
+        typer.Option(
+            help=(
+                "REPL type. "
+                "Default is sql if duckdb CLI is installed, otherwise python. "
+                "See https://duckdb.org/docs/api/python/overview.html for the duckdb Python API."
+            ),
+        ),
+    ] = None,
 ) -> NoReturn:
+    """
+    Start an interactive REPL allowing execution of SQL queries against tests in this repository.
+    """
     if repo is None:
         repo = get_current_repo().nameWithOwner
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
@@ -26,7 +47,18 @@ def repl(
 
 
 @app.command()
-def show(repo: Optional[str] = None) -> None:
+def show(
+    repo: Annotated[
+        Optional[str],
+        typer.Option(
+            help=(
+                "Repository to show, e.g. `--repo dandavison/tringa`. "
+                "Defaults to the current repository."
+            ),
+        ),
+    ] = None,
+) -> None:
+    """View a summary of tests in this repository."""
     if repo is None:
         repo = get_current_repo().nameWithOwner
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
@@ -37,10 +69,22 @@ def show(repo: Optional[str] = None) -> None:
 
 
 @app.command()
-def sql(query: str, repo: Optional[str] = None):
-    """
-    Execute a SQL query against the database.
-    """
+def sql(
+    query: Annotated[
+        str,
+        typer.Argument(help="SQL to execute."),
+    ],
+    repo: Annotated[
+        Optional[str],
+        typer.Option(
+            help=(
+                "Repository to execute the query against, e.g. `--repo dandavison/tringa`. "
+                "Defaults to the current repository."
+            ),
+        ),
+    ] = None,
+):
+    """Execute a SQL query against tests in this repository."""
     if repo is None:
         repo = get_current_repo().nameWithOwner
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:

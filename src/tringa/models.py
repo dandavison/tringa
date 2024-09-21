@@ -1,10 +1,14 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import NamedTuple, Optional
+from typing import NamedTuple, Optional, Protocol
 
 from rich.console import Console, ConsoleOptions, RenderResult
 
 from tringa import rich
+
+
+class Serializable(Protocol):
+    def to_dict(self) -> dict: ...
 
 
 @dataclass
@@ -31,7 +35,7 @@ class PR:
 
 
 @dataclass
-class Run:
+class Run(Serializable):
     repo: str
     id: str
     time: datetime
@@ -63,7 +67,7 @@ TreeSitterLanguageName = str  # TODO
 
 
 @dataclass
-class RepoResult:
+class RepoResult(Serializable):
     repo: str
     failed_tests: list[FailedTestRow]
 
@@ -80,7 +84,7 @@ class RepoResult:
 
 
 @dataclass
-class RunResult:
+class RunResult(Serializable):
     run: Run
     failed_tests: list[FailedTestRow]
 

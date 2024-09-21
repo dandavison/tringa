@@ -48,7 +48,7 @@ def rerun(pr_identifier: PrIdentifier = None) -> None:
 
 @app.command()
 def show(pr_identifier: PrIdentifier = None) -> None:
-    """View a summary of tests in the latest run for this PR."""
+    """Summarize tests in the latest run for this PR."""
     tringa.cli.run.show(_get_run(pr_identifier))
 
 

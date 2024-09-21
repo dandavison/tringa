@@ -11,6 +11,31 @@ from tringa.db import DB
 from tringa.models import Run, RunResult
 
 
+def flakes(run: Run) -> None:
+    with scoped_db.connect(
+        cli.options.db_config, repo=run.repo, run_id=run.id
+    ) as run_db:
+        flakes = [
+            s
+            for (s,) in run_db.connection.sql(
+                "select distinct name from test where flaky=true"
+            ).fetchall()
+        ]
+        with cli.options.db_config.connect() as main_db:
+            output.print_relation(
+                main_db.connection.sql(
+                    f"""
+                    select name, branch, count(*) from test
+                    where name in {tuple(flakes)} and
+                        passed=false and
+                        skipped=false and
+                        repo = '{run.repo}' and run_id = '{run.id}'
+                    group by name, branch
+                    """
+                )
+            )
+
+
 def repl(run: Run, repl: Optional[tringa.repl.Repl]) -> NoReturn:
     with scoped_db.connect(cli.options.db_config, repo=run.repo, run_id=run.id) as db:
         tringa.repl.repl(db, repl)

@@ -21,6 +21,12 @@ PrIdentifier = Annotated[
 
 
 @app.command()
+def flakes(pr_identifier: PrIdentifier = None) -> None:
+    """Summarize flaky tests in the latest run for this PR."""
+    tringa.cli.run.flakes(_get_run(pr_identifier))
+
+
+@app.command()
 def repl(
     pr_identifier: PrIdentifier = None,
     repl: Annotated[

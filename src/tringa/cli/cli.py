@@ -1,4 +1,3 @@
-import asyncio
 import warnings
 from typing import Optional
 
@@ -6,9 +5,9 @@ import duckdb
 import typer
 
 import tringa.repl
-from tringa import cli, gh
+from tringa import cli
 from tringa.artifact import fetch_and_load_new_artifacts
-from tringa.cli import pr
+from tringa.cli import pr, repo
 from tringa.exceptions import TringaException
 from tringa.msg import error, info
 from tringa.utils import tee as tee
@@ -28,14 +27,15 @@ def repl(
     Start a REPL to query the database.
     """
     if not repos:
-        repos = [asyncio.run(gh.repo()).nameWithOwner]
+        repos = [repo.get_current_repo().nameWithOwner]
     cli.validate_repl(repl)
     with cli.options.db_config.connect() as db:
         fetch_and_load_new_artifacts(db, repos, branch)
         tringa.repl.repl(db, repl)
 
 
-app.command()(pr.pr)
+app.add_typer(pr.app, name="pr")
+app.add_typer(repo.app, name="repo")
 
 
 @app.command()
@@ -52,27 +52,6 @@ def dropdb():
         exit(1)
     path.unlink()
     info("Deleted database at", path)
-
-
-@app.command()
-def sql(
-    query: str,
-    repos: list[str] = [],
-):
-    """
-    Execute a SQL query against the database.
-    """
-    if not repos:
-        repo = asyncio.run(gh.repo()).nameWithOwner
-        repos = [repo]
-        query = query.format(repo=repo)
-    with cli.options.db_config.connect() as db:
-        fetch_and_load_new_artifacts(db, repos)
-        rel = db.connection.sql(query)
-        if cli.options.json:
-            print(rel.df().to_json(orient="records", indent=2))
-        else:
-            print(rel)
 
 
 warnings.filterwarnings(

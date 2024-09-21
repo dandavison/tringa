@@ -8,12 +8,36 @@ from rich.text import Text
 from tringa import cli
 
 if TYPE_CHECKING:
-    from tringa.models import RunResult
+    from tringa.models import FailedTestRow, RepoResult, RunResult
 
 console = Console()
 
 print = console.print
 print_json = console.print_json
+
+
+def render_repo_result(repo_result: "RepoResult") -> RenderResult:
+    rr = repo_result
+
+    def make_header():
+        def rows():
+            yield (
+                "Repo",
+                f"[link=https://github.com/{rr.repo}]{rr.repo}[/link]",
+            )
+            yield (
+                "Failed tests",
+                Text(str(len(rr.failed_tests)), style="bold"),
+            )
+
+        table = Table(show_header=False)
+        for row in rows():
+            table.add_row(*row)
+        return table
+
+    yield make_header()
+    if cli.options.verbose > 1:
+        yield from make_failed_tests(rr.failed_tests)
 
 
 def render_run_result(run_result: "RunResult") -> RenderResult:
@@ -44,16 +68,17 @@ def render_run_result(run_result: "RunResult") -> RenderResult:
             table.add_row(*row)
         return table
 
-    def make_failed_tests():
-        def rows():
-            for test in run_result.failed_tests:
-                yield (test.name, test.text)
-
-        for name, text in rows():
-            table = Table(name)
-            table.add_row(text)
-            yield table
-
     yield make_header()
     if cli.options.verbose > 1:
-        yield from make_failed_tests()
+        yield from make_failed_tests(rr.failed_tests)
+
+
+def make_failed_tests(failed_tests: list["FailedTestRow"]):
+    def rows():
+        for test in failed_tests:
+            yield (test.name, test.text)
+
+    for name, text in rows():
+        table = Table(name)
+        table.add_row(text)
+        yield table

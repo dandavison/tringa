@@ -11,8 +11,7 @@ from textual.css.query import NoMatches
 from textual.widgets import Collapsible, ListItem, ListView, RichLog, Static
 from textual.widgets._collapsible import CollapsibleTitle
 
-from tringa.cli.pr import RunResult
-from tringa.models import PR, FailedTestRow, Run
+from tringa.models import PR, FailedTestRow, Run, RunResult
 
 
 class RunResultSummary(Static):
@@ -140,7 +139,7 @@ class RunResultApp(App):
                         collapsible.collapsed = not visible
 
 
-def tui(run_result: RunResult):
+def tui(run_result: RunResult) -> None:
     app = RunResultApp(run_result)
     app.run()
 

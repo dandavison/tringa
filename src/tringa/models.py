@@ -4,7 +4,7 @@ from typing import NamedTuple, Optional
 
 from rich.console import Console, ConsoleOptions, RenderResult
 
-from tringa.rich import render_run_result
+from tringa import rich
 
 
 @dataclass
@@ -63,6 +63,23 @@ TreeSitterLanguageName = str  # TODO
 
 
 @dataclass
+class RepoResult:
+    repo: str
+    failed_tests: list[FailedTestRow]
+
+    def to_dict(self) -> dict:
+        return {
+            "repo": self.repo,
+            "failed_tests": self.failed_tests,
+        }
+
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
+        return rich.render_repo_result(self)
+
+
+@dataclass
 class RunResult:
     run: Run
     failed_tests: list[FailedTestRow]
@@ -100,4 +117,4 @@ class RunResult:
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
-        return render_run_result(self)
+        return rich.render_run_result(self)

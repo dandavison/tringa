@@ -1,12 +1,12 @@
 import os
 import shutil
 from enum import StrEnum
-from typing import NoReturn
+from typing import NoReturn, Optional
 
 import IPython
 
 from tringa.db import DB
-from tringa.msg import fatal
+from tringa.msg import fatal, warn
 
 
 class Repl(StrEnum):
@@ -14,11 +14,19 @@ class Repl(StrEnum):
     PYTHON = "python"
 
 
-def repl(db: DB, repl: Repl) -> NoReturn:
+def repl(db: DB, repl: Optional[Repl]) -> NoReturn:
     match repl:
         case Repl.SQL:
             sql(db)
         case Repl.PYTHON:
+            python(db)
+        case None:
+            if shutil.which("duckdb"):
+                sql(db)
+            else:
+                warn(
+                    "Using Python REPL. Install the duckdb CLI to use the duckdb SQL REPL: https://duckdb.org/docs/installation/."
+                )
             python(db)
 
 

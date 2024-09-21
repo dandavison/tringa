@@ -17,8 +17,10 @@ from typing import cast
 from duckdb import DuckDBPyConnection
 
 
-def annotate(conn: DuckDBPyConnection):
-    tests = conn.execute("select classname, name, passed, branch from test").fetchall()
+def annotate(from_conn: DuckDBPyConnection, to_conn: DuckDBPyConnection):
+    tests = from_conn.execute(
+        "select classname, name, passed, branch from test"
+    ).fetchall()
     tests = cast(list[tuple[str, str, bool, str]], tests)
     fail_branches, flaky = defaultdict(set), set()
     for classname, name, passed, branch in tests:
@@ -29,8 +31,6 @@ def annotate(conn: DuckDBPyConnection):
                 flaky.add(key)
 
     if any(flaky):
-        # TODO: are we really going to write computed values to the db? It might be
-        # nice to add the annotations in some way that is not persisted.
-        conn.executemany(
+        to_conn.executemany(
             "UPDATE test SET flaky = true WHERE classname = ? AND name = ?", list(flaky)
         )

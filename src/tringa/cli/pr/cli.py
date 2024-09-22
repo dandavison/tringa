@@ -3,7 +3,7 @@ from typing import Annotated, NoReturn, Optional
 
 import typer
 
-import tringa.cli.run
+import tringa.cli.run.cli
 import tringa.repl
 from tringa import cli, gh, queries
 from tringa.annotations import flaky as flaky
@@ -24,7 +24,7 @@ PrIdentifier = Annotated[
 @app.command()
 def flakes(pr_identifier: PrIdentifier = None) -> None:
     """Summarize flaky tests in the latest run for this PR."""
-    tringa.cli.run.flakes(_get_run(pr_identifier))
+    tringa.cli.run.cli.flakes(_get_run(pr_identifier))
 
 
 @app.command()
@@ -44,31 +44,31 @@ def repl(
     """
     Start an interactive REPL allowing execution of SQL queries against tests from the latest run for this PR.
     """
-    tringa.cli.run.repl(_get_run(pr_identifier), repl)
+    tringa.cli.run.cli.repl(_get_run(pr_identifier), repl)
 
 
 @app.command()
 def rerun(pr_identifier: PrIdentifier = None) -> None:
     """Rerun failed tests in the latest run for this PR."""
-    tringa.cli.run.rerun(_get_run(pr_identifier))
+    tringa.cli.run.cli.rerun(_get_run(pr_identifier))
 
 
 @app.command()
 def show(pr_identifier: PrIdentifier = None) -> None:
     """Summarize tests in the latest run for this PR."""
-    tringa.cli.run.show(_get_run(pr_identifier))
+    tringa.cli.run.cli.show(_get_run(pr_identifier))
 
 
 @app.command()
 def sql(query: str, pr_identifier: PrIdentifier = None) -> None:
     """Execute a SQL query against tests in the latest run for this PR."""
-    tringa.cli.run.sql(_get_run(pr_identifier), query)
+    tringa.cli.run.cli.sql(_get_run(pr_identifier), query)
 
 
 @app.command()
 def tui(pr_identifier: PrIdentifier = None) -> NoReturn:
     """Browse tests in the latest run for this PR using an interactive interface."""
-    tringa.cli.run.tui(_get_run(pr_identifier))
+    tringa.cli.run.cli.tui(_get_run(pr_identifier))
 
 
 def _get_run(pr_identifier: Optional[str]) -> Run:

@@ -2,16 +2,18 @@ import asyncio
 from typing import Annotated, NoReturn, Optional
 
 import typer
+from attr import dataclass
 
-import tringa.cli.run
+import tringa.cli.run.cli
 import tringa.repl
 import tringa.tui.tui
 from tringa import cli, gh, scoped_db
 from tringa.annotations import flaky as flaky
+from tringa.cli import print, print_json
+from tringa.cli.repo.summary import RepoSummary
 from tringa.db import DB
-from tringa.models import Repo, RepoResult
+from tringa.models import Repo
 from tringa.queries import EmptyParams, Query
-from tringa.rich import print, print_json
 
 app = typer.Typer(rich_markup_mode="rich")
 
@@ -101,7 +103,7 @@ def get_current_repo() -> Repo:
     return asyncio.run(gh.repo())
 
 
-def _make_repo_result(db: DB, repo: str) -> RepoResult:
+def _make_repo_result(db: DB, repo: str) -> RepoSummary:
     flaky_tests = Query[tuple[str], EmptyParams](
         """
     select distinct name from test
@@ -110,7 +112,13 @@ def _make_repo_result(db: DB, repo: str) -> RepoResult:
     """
     ).fetchall(db, {})
 
-    return RepoResult(
+    return RepoSummary(
         repo=repo,
         flaky_tests=flaky_tests,
     )
+
+
+@dataclass
+class FlakyTest:
+    name: str
+    introduced_in: str

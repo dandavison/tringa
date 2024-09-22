@@ -1,14 +1,15 @@
 import asyncio
 from typing import NoReturn, Optional
 
-import tringa.cli.run
+import tringa.cli.run.cli
 import tringa.repl
 import tringa.tui.tui
 from tringa import cli, gh, queries, scoped_db
 from tringa.annotations import flaky as flaky
 from tringa.cli import output
+from tringa.cli.run.results import RunResults
 from tringa.db import DB
-from tringa.models import Run, RunResult
+from tringa.models import Run
 
 
 def flakes(run: Run) -> None:
@@ -63,8 +64,8 @@ def tui(run: Run) -> NoReturn:  # type: ignore
         tringa.tui.tui.tui(run_result=_make_run_result(db, run))
 
 
-def _make_run_result(db: DB, run: Run) -> RunResult:
-    return RunResult(
+def _make_run_result(db: DB, run: Run) -> RunResults:
+    return RunResults(
         run=run,
         failed_tests=queries.failed_test_results(db, {}),
     )

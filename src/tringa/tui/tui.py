@@ -11,13 +11,14 @@ from textual.css.query import NoMatches
 from textual.widgets import Collapsible, ListItem, ListView, RichLog, Static
 from textual.widgets._collapsible import CollapsibleTitle
 
-from tringa.models import PR, Run, RunResult, TestResult
+from tringa.cli.run.results import RunResults
+from tringa.models import PR, Run, TestResult
 
 
-class RunResultSummary(Static):
-    def __init__(self, run_result: RunResult):
+class RunResultsWidget(Static):
+    def __init__(self, run_results: RunResults):
         super().__init__()
-        self.run_result = run_result
+        self.run_result = run_results
 
     def render(self) -> RenderResult:
         rr = self.run_result
@@ -67,12 +68,12 @@ class RunResultApp(App):
         Binding("left", "hide_test_output", "Hide test output"),
     ]
 
-    def __init__(self, run_result: RunResult):
+    def __init__(self, run_result: RunResults):
         super().__init__()
         self.run_result = run_result
 
     def compose(self) -> ComposeResult:
-        yield RunResultSummary(self.run_result)
+        yield RunResultsWidget(self.run_result)
         language = self.run_result.guess_language()
 
         def per_file_results() -> Iterator[tuple[str, ListView]]:
@@ -139,14 +140,14 @@ class RunResultApp(App):
                         collapsible.collapsed = not visible
 
 
-def tui(run_result: RunResult) -> None:
+def tui(run_result: RunResults) -> None:
     app = RunResultApp(run_result)
     app.run()
 
 
 if __name__ == "__main__":
     tui(
-        RunResult(
+        RunResults(
             run=Run(
                 repo="repo",
                 id="id",

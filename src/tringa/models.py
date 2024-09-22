@@ -53,6 +53,32 @@ class Run(Serializable):
         }
 
 
+class TestResult(NamedTuple):
+    artifact_name: str
+
+    # run-level fields
+    repo: str
+    branch: str
+    run_id: str
+    sha: str
+
+    # suite-level fields
+    file: str
+    suite: str
+    suite_timestamp: datetime
+    suite_time: float
+
+    # test-level fields
+    name: str  # Name of the test function
+    classname: str  # Name of class or module containing the test function
+    time: float
+    passed: bool
+    skipped: bool
+    flaky: bool
+    message: Optional[str]  # Failure message
+    text: Optional[str]  # Stack trace or code context of failure
+
+
 class FailedTestRow(NamedTuple):
     file: str
     name: str

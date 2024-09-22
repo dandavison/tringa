@@ -1,12 +1,10 @@
 from contextlib import contextmanager
 from dataclasses import dataclass
-from datetime import datetime
 from pathlib import Path
 from typing import (
     Any,
     Iterable,
     Iterator,
-    NamedTuple,
     Optional,
     Sequence,
 )
@@ -15,34 +13,8 @@ import duckdb
 import pandas as pd
 
 from tringa.exceptions import TringaQueryException
+from tringa.models import TestResult
 from tringa.msg import debug
-
-
-class TestResult(NamedTuple):
-    artifact_name: str
-
-    # run-level fields
-    repo: str
-    branch: str
-    run_id: str
-    sha: str
-
-    # suite-level fields
-    file: str
-    suite: str
-    suite_timestamp: datetime
-    suite_time: float
-
-    # test-level fields
-    name: str  # Name of the test function
-    classname: str  # Name of class or module containing the test function
-    time: float
-    passed: bool
-    skipped: bool
-    flaky: bool
-    message: Optional[str]  # Failure message
-    text: Optional[str]  # Stack trace or code context of failure
-
 
 CREATE_SCHEMA_SQL = """
 CREATE TABLE test (

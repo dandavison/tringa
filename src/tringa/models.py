@@ -1,8 +1,9 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import NamedTuple, Optional, Protocol
+from typing import NamedTuple, Optional, Protocol, runtime_checkable
 
 
+@runtime_checkable
 class Serializable(Protocol):
     def to_dict(self) -> dict: ...
 

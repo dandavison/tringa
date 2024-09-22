@@ -3,15 +3,12 @@ from pathlib import Path
 from typing import Optional
 
 import typer
-from rich.console import Console
 from xdg_base_dirs import xdg_data_home
 
 import tringa.repl
+from tringa import cli as cli
+from tringa.cli.output import console as console
 from tringa.db import DBConfig
-
-console = Console()
-print = console.print
-print_json = console.print_json
 
 
 @dataclass

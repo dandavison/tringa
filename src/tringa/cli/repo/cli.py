@@ -2,14 +2,14 @@ import asyncio
 from typing import Annotated, NoReturn, Optional
 
 import typer
-from attr import dataclass
 
 import tringa.cli.run.cli
 import tringa.repl
 import tringa.tui.tui
 from tringa import cli, gh, scoped_db
 from tringa.annotations import flaky as flaky
-from tringa.cli import print, print_json
+from tringa.cli.output import tringa_print
+from tringa.cli.repo.flakes import get_flakes
 from tringa.cli.repo.summary import RepoSummary
 from tringa.db import DB
 from tringa.models import Repo
@@ -26,6 +26,17 @@ RepoOption = Annotated[
         ),
     ),
 ]
+
+
+@app.command()
+def flakes(
+    repo: RepoOption = None,
+) -> None:
+    """Show flaky tests in this repository."""
+    if repo is None:
+        repo = get_current_repo().nameWithOwner
+    with scoped_db.connect(cli.options.db_config, repo=repo) as db:
+        tringa_print(get_flakes(db))
 
 
 @app.command()
@@ -59,10 +70,7 @@ def show(
     if repo is None:
         repo = get_current_repo().nameWithOwner
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
-        result = _make_repo_result(db, repo)
-        if cli.options.json:
-            print_json(data=result.to_dict(), sort_keys=True)
-        print(result)
+        tringa_print(_make_repo_result(db, repo))
 
 
 @app.command()
@@ -77,11 +85,7 @@ def sql(
     if repo is None:
         repo = get_current_repo().nameWithOwner
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
-        rel = db.connection.sql(query)
-        if cli.options.json:
-            print(rel.df().to_json(orient="records", indent=2))
-        else:
-            print(rel)
+        tringa_print(db.connection.sql(query))
 
 
 def get_current_repo() -> Repo:
@@ -102,9 +106,3 @@ def _make_repo_result(db: DB, repo: str) -> RepoSummary:
         repo=repo,
         flaky_tests=flaky_tests,
     )
-
-
-@dataclass
-class FlakyTest:
-    name: str
-    introduced_in: str

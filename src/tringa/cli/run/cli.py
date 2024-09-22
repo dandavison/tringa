@@ -6,7 +6,7 @@ import tringa.repl
 import tringa.tui.tui
 from tringa import cli, gh, queries, scoped_db
 from tringa.annotations import flaky as flaky
-from tringa.cli import output
+from tringa.cli.output import tringa_print
 from tringa.cli.run.results import RunResults
 from tringa.db import DB
 from tringa.models import Run
@@ -23,7 +23,7 @@ def flakes(run: Run) -> None:
             ).fetchall()
         ]
         with cli.options.db_config.connect() as main_db:
-            output.print_relation(
+            tringa_print(
                 main_db.connection.sql(
                     f"""
                     select name, branch, count(*) from test
@@ -48,7 +48,7 @@ def rerun(run: Run) -> None:
 
 def show(run: Run) -> None:
     with scoped_db.connect(cli.options.db_config, repo=run.repo, run_id=run.id) as db:
-        output.print_serializable(_make_run_result(db, run))
+        tringa_print(_make_run_result(db, run))
 
 
 def sql(run: Run, query: str) -> None:
@@ -56,7 +56,7 @@ def sql(run: Run, query: str) -> None:
     Execute a SQL query against the database.
     """
     with scoped_db.connect(cli.options.db_config, repo=run.repo, run_id=run.id) as db:
-        output.print_relation(db.connection.sql(query))
+        tringa_print(db.connection.sql(query))
 
 
 def tui(run: Run) -> NoReturn:  # type: ignore

@@ -7,6 +7,7 @@ import tringa.cli.run
 import tringa.repl
 from tringa import cli, gh, queries
 from tringa.annotations import flaky as flaky
+from tringa.artifact import fetch_and_load_new_artifacts
 from tringa.models import Run
 
 app = typer.Typer(rich_markup_mode="rich")
@@ -73,4 +74,10 @@ def tui(pr_identifier: PrIdentifier = None) -> NoReturn:
 def _get_run(pr_identifier: Optional[str]) -> Run:
     pr = asyncio.run(gh.pr(pr_identifier))
     with cli.options.db_config.connect() as db:
+        # TODO: syncing data for the repo should be done somewhere more obvious,
+        # not hidden away in `get_run`.
+        # We fetch for the entire repo, even when the requested scope is run, in
+        # order to collect information across branches used to identify flakes.
+        fetch_and_load_new_artifacts(db, [pr.repo])
+
         return queries.last_run(db, pr)

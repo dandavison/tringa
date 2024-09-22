@@ -12,25 +12,26 @@ TODO: we would like the definition to capture "has failed on main".
 """
 
 from collections import defaultdict
-from typing import cast
 
-from duckdb import DuckDBPyConnection
+from tringa.db import DB
+from tringa.queries import EmptyParams, Query
+
+_query = Query[EmptyParams, tuple[str, str, bool, bool, str]](
+    "select classname, name, passed, skipped, branch from test;"
+).fetchall
 
 
-def annotate(from_conn: DuckDBPyConnection, to_conn: DuckDBPyConnection):
-    tests = from_conn.execute(
-        "select classname, name, passed, branch from test"
-    ).fetchall()
-    tests = cast(list[tuple[str, str, bool, str]], tests)
+def annotate(from_db: DB, to_db: DB):
+    tests = _query(from_db, {})
     fail_branches, flaky = defaultdict(set), set()
-    for classname, name, passed, branch in tests:
+    for classname, name, passed, skipped, branch in tests:
         key = (classname, name)
-        if not passed:
+        if not passed and not skipped:
             fail_branches[key].add(branch)
             if len(fail_branches[key]) > 1:
                 flaky.add(key)
 
     if any(flaky):
-        to_conn.executemany(
+        to_db.connection.executemany(
             "UPDATE test SET flaky = true WHERE classname = ? AND name = ?", list(flaky)
         )

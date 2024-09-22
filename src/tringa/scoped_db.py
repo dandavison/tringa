@@ -31,5 +31,5 @@ def connect(
             path.unlink()
             with DBConfig(path).connect() as db2:
                 db2.connection.execute("insert into test select * from df")
-                flaky.annotate(db.connection, db2.connection)
+                flaky.annotate(db, db2)
                 yield db2

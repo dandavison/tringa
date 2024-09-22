@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
-from typing import Iterator, Optional
+from typing import Iterator
 
 import humanize
 from rich.table import Table
@@ -49,7 +49,7 @@ class RunResultsWidget(Static):
 
 
 class FailedTestWidget(Collapsible):
-    def __init__(self, test: TestResult, language: Optional[str]):
+    def __init__(self, test: TestResult):
         title = test.name
         if test.flaky:
             title = f"{title} [bold yellow]FLAKY[/]"
@@ -74,7 +74,6 @@ class RunResultApp(App):
 
     def compose(self) -> ComposeResult:
         yield RunResultsWidget(self.run_result)
-        language = self.run_result.guess_language()
 
         def per_file_results() -> Iterator[tuple[str, ListView]]:
             tests_by_file = defaultdict(list[TestResult])
@@ -85,9 +84,7 @@ class RunResultApp(App):
                 n_flaky = sum(1 for test in tests if test.flaky)
                 yield (
                     f"{name} [bold red]{len(tests)} failed[/] ([bold yellow]{n_flaky} flaky[/])",
-                    ListView(
-                        *[ListItem(FailedTestWidget(test, language)) for test in tests]
-                    ),
+                    ListView(*[ListItem(FailedTestWidget(test)) for test in tests]),
                 )
 
         yield ListView(

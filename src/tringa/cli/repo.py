@@ -6,7 +6,7 @@ import typer
 import tringa.cli.run
 import tringa.repl
 import tringa.tui.tui
-from tringa import cli, gh, scoped_db
+from tringa import cli, gh, queries, scoped_db
 from tringa.annotations import flaky as flaky
 from tringa.db import DB
 from tringa.models import Repo, RepoResult
@@ -103,5 +103,5 @@ def get_current_repo() -> Repo:
 def _make_repo_result(db: DB, repo: str) -> RepoResult:
     return RepoResult(
         repo=repo,
-        failed_tests=[],
+        failed_tests=queries.failed_tests(db),
     )

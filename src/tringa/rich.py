@@ -8,7 +8,7 @@ from rich.text import Text
 from tringa import cli
 
 if TYPE_CHECKING:
-    from tringa.models import FailedTestRow, RepoResult, RunResult
+    from tringa.models import RepoResult, RunResult, TestResult
 
 console = Console()
 
@@ -73,7 +73,7 @@ def render_run_result(run_result: "RunResult") -> RenderResult:
         yield from make_failed_tests(rr.failed_tests)
 
 
-def make_failed_tests(failed_tests: list["FailedTestRow"]):
+def make_failed_tests(failed_tests: list["TestResult"]):
     def rows():
         for test in failed_tests:
             yield (test.name, test.text)

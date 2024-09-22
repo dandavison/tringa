@@ -11,7 +11,7 @@ from textual.css.query import NoMatches
 from textual.widgets import Collapsible, ListItem, ListView, RichLog, Static
 from textual.widgets._collapsible import CollapsibleTitle
 
-from tringa.models import PR, FailedTestRow, Run, RunResult
+from tringa.models import PR, Run, RunResult, TestResult
 
 
 class RunResultSummary(Static):
@@ -48,7 +48,7 @@ class RunResultSummary(Static):
 
 
 class FailedTestWidget(Collapsible):
-    def __init__(self, test: FailedTestRow, language: Optional[str]):
+    def __init__(self, test: TestResult, language: Optional[str]):
         title = test.name
         if test.flaky:
             title = f"{title} [bold yellow]FLAKY[/]"
@@ -76,7 +76,7 @@ class RunResultApp(App):
         language = self.run_result.guess_language()
 
         def per_file_results() -> Iterator[tuple[str, ListView]]:
-            tests_by_file = defaultdict(list[FailedTestRow])
+            tests_by_file = defaultdict(list[TestResult])
             for test in self.run_result.failed_tests:
                 tests_by_file[test.file].append(test)
             for file, tests in sorted(tests_by_file.items()):
@@ -162,13 +162,23 @@ if __name__ == "__main__":
             ),
             failed_tests=(
                 [
-                    FailedTestRow(
-                        file="file",
-                        name="name",
+                    TestResult(
+                        artifact_name="artifact_name",
+                        repo="repo",
+                        branch="branch",
+                        file="example.py",
+                        name="test_example",
+                        run_id="run_id",
+                        sha="sha",
+                        suite="suite",
+                        suite_timestamp=datetime.now(),
+                        suite_time=1,
+                        classname="classname",
+                        time=1,
                         passed=False,
                         flaky=False,
-                        runs=1,
-                        max_time=1,
+                        skipped=False,
+                        message="message",
                         text="""Traceback (most recent call last):
   File "example.py", line 10, in <module>
     result = divide(10, 0)

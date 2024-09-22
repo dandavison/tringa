@@ -79,23 +79,13 @@ class TestResult(NamedTuple):
     text: Optional[str]  # Stack trace or code context of failure
 
 
-class FailedTestRow(NamedTuple):
-    file: str
-    name: str
-    passed: bool
-    flaky: bool
-    runs: int
-    max_time: float
-    text: str
-
-
 TreeSitterLanguageName = str  # TODO
 
 
 @dataclass
 class RepoResult(Serializable):
     repo: str
-    failed_tests: list[FailedTestRow]
+    failed_tests: list[TestResult]
 
     def to_dict(self) -> dict:
         return {
@@ -112,7 +102,7 @@ class RepoResult(Serializable):
 @dataclass
 class RunResult(Serializable):
     run: Run
-    failed_tests: list[FailedTestRow]
+    failed_tests: list[TestResult]
 
     def to_dict(self) -> dict:
         return {
@@ -137,7 +127,7 @@ class RunResult(Serializable):
             lang
             for ext, lang in extensions.items()
             # Look for apparent file-path-with-line-number in the test output
-            if any(f".{ext}:" in t.text for t in self.failed_tests)
+            if any(f".{ext}:" in (t.text or "") for t in self.failed_tests)
         }
         if len(candidates) == 1:
             return candidates.pop()

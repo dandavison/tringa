@@ -11,7 +11,7 @@ from textwrap import dedent
 from typing import Any, Mapping, TypedDict
 
 from tringa.db import DB
-from tringa.models import PR, FailedTestRow, Run
+from tringa.models import PR, Run, TestResult
 
 
 @dataclass
@@ -39,18 +39,17 @@ class EmptyParams(TypedDict):
 count_test_results = Query[EmptyParams, int]("select count(*) from test;").fetchone
 
 
-_failed_tests = Query[EmptyParams, FailedTestRow](
+_failed_tests = Query[EmptyParams, TestResult](
     """
-    select file, name, passed, flaky, count(*) as runs, max(time) as max_time, max(text) as text from test
+    select * from test
     where passed = false and skipped = false
-    group by file, name, passed, flaky
-    order by file, flaky desc, max_time desc;
+    order by file, flaky desc, time desc;
     """
 ).fetchall
 
 
-def failed_tests(db: DB) -> list[FailedTestRow]:
-    return [FailedTestRow(*row) for row in _failed_tests(db, {})]
+def failed_tests(db: DB) -> list[TestResult]:
+    return [TestResult(*row) for row in _failed_tests(db, {})]
 
 
 class LastRunIdParams(TypedDict):

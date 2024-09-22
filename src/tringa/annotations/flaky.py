@@ -13,25 +13,25 @@ and it failed in both.
 from collections import defaultdict
 
 from tringa.db import DB
+from tringa.models import TestResult
 from tringa.queries import EmptyParams, Query
-
-_query = Query[tuple[str, str, bool, bool, str], EmptyParams](
-    "select classname, name, passed, skipped, branch from test;"
-).fetchall
 
 
 def annotate(from_db: DB, to_db: DB):
-    tests = _query(from_db, {})
+    test_results = Query[TestResult, EmptyParams]("select * from test;").fetchall(
+        from_db, {}
+    )
     seen_branches, flaky = defaultdict(set), set()
-    for classname, name, passed, skipped, branch in tests:
-        if skipped:
+    for tr in test_results:
+        if tr.skipped:
             continue
-        key = (classname, name)
-        seen_branches[key].add(branch)
-        if not passed and len(seen_branches[key]) > 1:
+        key = (tr.repo, tr.classname, tr.name)
+        seen_branches[key].add(tr.branch)
+        if not tr.passed and len(seen_branches[key]) > 1:
             flaky.add(key)
 
     if any(flaky):
         to_db.connection.executemany(
-            "UPDATE test SET flaky = true WHERE classname = ? AND name = ?", list(flaky)
+            "UPDATE test SET flaky = true WHERE repo = ? AND classname = ? AND name = ?",
+            list(flaky),
         )

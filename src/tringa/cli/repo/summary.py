@@ -37,11 +37,4 @@ class RepoSummary(Serializable):
                 table.add_row(*row)
             return table
 
-        def make_flaky_tests():
-            table = Table("Flaky tests", show_header=True)
-            for (name,) in self.flaky_tests:
-                table.add_row(name)
-            return table
-
         yield make_summary()
-        yield make_flaky_tests()

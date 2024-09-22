@@ -78,5 +78,30 @@ class TestResult(NamedTuple):
     message: Optional[str]  # Failure message
     text: Optional[str]  # Stack trace or code context of failure
 
+    @property
+    def pr(self) -> PR:
+        login, repo = self.repo.split("/")
+        number = 99999
+        return PR(
+            headRefName=self.branch,
+            headRepository={
+                "name": repo,
+                "login": login,
+            },
+            headRepositoryOwner={
+                "name": repo,
+                "login": login,
+            },
+            url=f"https://github.com/{self.repo}/pull/{number}",
+            title=f"PR: {self.branch}",
+            number=number,
+        )
+
+    def __str__(self) -> str:
+        return f"{self.__class__.__name__}({self.artifact_name}, {self.repo}, {self.branch}, {self.run_id}, {self.file}, {self.name})"
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
 
 TreeSitterLanguageName = str  # TODO

@@ -19,12 +19,12 @@ def connect(
         if run_id:
             query += f" and run_id = '{run_id}'"
 
-        df = db.connection.execute(query).df()
+        _df = db.connection.execute(query).df()
 
         with tempfile.NamedTemporaryFile() as f:
             path = Path(f.name)
             path.unlink()
             with DBConfig(path).connect() as db2:
-                db2.connection.execute("insert into test select * from df")
+                db2.connection.execute("insert into test select * from _df")
                 flaky.annotate(db, db2)
                 yield db2

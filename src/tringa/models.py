@@ -29,6 +29,9 @@ class PR:
     def branch(self) -> str:
         return self.headRefName
 
+    def __rich__(self) -> str:
+        return f"[link={self.url}]#{self.number} {self.title}[/link]"
+
 
 @dataclass
 class Run(Serializable):

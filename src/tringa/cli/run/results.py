@@ -56,10 +56,7 @@ class RunResults(Serializable):
                     "Repo",
                     f"[link=https://github.com/{self.run.repo}]{self.run.repo}[/link]",
                 )
-                yield (
-                    "PR",
-                    f"[link={pr.url}]#{pr.number} {pr.title}[/link]",
-                )
+                yield ("PR", pr)
                 yield (
                     "Last run",
                     f"[link={self.run.url()}]{humanize.naturaltime(self.run.time)}[/link]",

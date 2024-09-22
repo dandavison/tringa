@@ -85,12 +85,12 @@ TreeSitterLanguageName = str  # TODO
 @dataclass
 class RepoResult(Serializable):
     repo: str
-    failed_tests: list[TestResult]
+    flaky_tests: list[tuple[str]]
 
     def to_dict(self) -> dict:
         return {
             "repo": self.repo,
-            "failed_tests": self.failed_tests,
+            "flaky_tests": self.flaky_tests,
         }
 
     def __rich_console__(

@@ -6,10 +6,11 @@ import typer
 import tringa.cli.run
 import tringa.repl
 import tringa.tui.tui
-from tringa import cli, gh, queries, scoped_db
+from tringa import cli, gh, scoped_db
 from tringa.annotations import flaky as flaky
 from tringa.db import DB
 from tringa.models import Repo, RepoResult
+from tringa.queries import EmptyParams, Query
 from tringa.rich import print, print_json
 
 app = typer.Typer(rich_markup_mode="rich")
@@ -101,7 +102,15 @@ def get_current_repo() -> Repo:
 
 
 def _make_repo_result(db: DB, repo: str) -> RepoResult:
+    flaky_tests = Query[tuple[str], EmptyParams](
+        """
+    select distinct name from test
+    where flaky = true
+    order by file, time desc;
+    """
+    ).fetchall(db, {})
+
     return RepoResult(
         repo=repo,
-        failed_tests=queries.failed_tests(db, {}),
+        flaky_tests=flaky_tests,
     )

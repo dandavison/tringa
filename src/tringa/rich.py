@@ -26,8 +26,8 @@ def render_repo_result(repo_result: "RepoResult") -> RenderResult:
                 f"[link=https://github.com/{rr.repo}]{rr.repo}[/link]",
             )
             yield (
-                "Failed tests",
-                Text(str(len(rr.failed_tests)), style="bold"),
+                "Flaky tests",
+                Text(str(len(rr.flaky_tests)), style="bold"),
             )
 
         table = Table(show_header=False)
@@ -36,8 +36,6 @@ def render_repo_result(repo_result: "RepoResult") -> RenderResult:
         return table
 
     yield make_header()
-    if cli.options.verbose > 1:
-        yield from make_failed_tests(rr.failed_tests)
 
 
 def render_run_result(run_result: "RunResult") -> RenderResult:

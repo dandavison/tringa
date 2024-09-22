@@ -7,7 +7,7 @@ import tringa.cli.run.cli
 import tringa.repl
 from tringa import cli, gh, queries
 from tringa.annotations import flaky as flaky
-from tringa.artifact import fetch_and_load_new_artifacts
+from tringa.fetch import fetch_and_load_new_artifacts
 from tringa.models import Run
 
 app = typer.Typer(rich_markup_mode="rich")

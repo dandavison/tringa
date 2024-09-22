@@ -3,7 +3,7 @@ from collections import namedtuple
 from datetime import datetime
 from fnmatch import fnmatch
 from io import BytesIO
-from itertools import chain
+from itertools import chain, starmap
 from typing import AsyncIterator, Iterator, Optional, TypedDict
 from zipfile import ZipFile
 
@@ -11,7 +11,8 @@ import junitparser.xunit2 as jup
 
 from tringa import cli, gh
 from tringa.db import DB, TestResult
-from tringa.msg import debug, info, warn
+from tringa.models import PR
+from tringa.msg import debug, warn
 from tringa.utils import async_to_sync_iterator
 
 
@@ -32,15 +33,11 @@ def fetch_and_load_new_artifacts(
 ):
     artifact_name_globs = cli.options.artifact_name_globs or ["*"]
     remote_artifacts = _list_remote_artifacts(repos, branch, artifact_name_globs)
-    artifacts_to_download = _query_for_artifacts_not_in_db(db, remote_artifacts)
+    artifacts_to_download = _get_artifacts_not_in_db(db, remote_artifacts)
     downloaded_artifacts = _download_zip_artifacts(artifacts_to_download)
-    msg = f"Downloaded {len(artifacts_to_download)} new artifacts for repos: {repos}"
-    if branch is not None:
-        msg += f" branch: {branch}"
-    if artifact_name_globs is not None:
-        msg += f" artifact_name_globs: {artifact_name_globs}"
-    info(msg)
-    _load_xml_from_zip_artifacts(db, downloaded_artifacts)
+    rows = _parse_xml_from_zip_artifacts(downloaded_artifacts)
+    rows = _fetch_pr_info(list(rows))
+    db.insert_rows(rows)
 
 
 def _list_remote_artifacts(
@@ -84,7 +81,7 @@ async def _list_remote_artifacts_for_repo(repo: str) -> list[Artifact]:
     ]
 
 
-def _query_for_artifacts_not_in_db(
+def _get_artifacts_not_in_db(
     db: DB,
     available_artifacts: list[Artifact],
 ) -> list[Artifact]:
@@ -120,21 +117,46 @@ def _download_zip_artifacts(
     return async_to_sync_iterator(fetch_zips())
 
 
-def _load_xml_from_zip_artifacts(
-    db: DB,
+def _parse_xml_from_zip_artifacts(
     artifacts: Iterator[tuple[Artifact, bytes]],
-):
-    info(f"Loading artifacts into {db}")
+) -> Iterator[TestResult]:
+    for artifact, zip_bytes in artifacts:
+        with ZipFile(BytesIO(zip_bytes)) as zip_file:
+            for file_name in zip_file.namelist():
+                if file_name.endswith(".xml"):
+                    yield from _parse_xml_file(file_name, zip_file, artifact)
 
-    def rows() -> Iterator[TestResult]:
-        for artifact, zip_bytes in artifacts:
-            with ZipFile(BytesIO(zip_bytes)) as zip_file:
-                for file_name in zip_file.namelist():
-                    if file_name.endswith(".xml"):
-                        yield from _parse_xml_file(file_name, zip_file, artifact)
 
-    info("Inserting test rows into db")
-    db.insert_rows(rows())
+def _fetch_pr_info(rows: list[TestResult]) -> Iterator[TestResult]:
+    async def get_prs() -> dict[tuple[str, str], PR]:
+        prs: dict[tuple[str, str], PR] = {}
+        branches = list({(r.branch, r.repo) for r in rows})
+        for (branch, repo), pr in zip(
+            branches,
+            await asyncio.gather(*starmap(gh.pr, branches), return_exceptions=True),
+        ):
+            if isinstance(pr, BaseException):
+                exc = pr
+                del pr
+                if "no pull requests found for branch" in str(exc).lower():
+                    if branch not in ["main", "master"]:
+                        warn(f"Failed to get PR info for {repo}:{branch}: {exc}")
+                else:
+                    raise exc
+            else:
+                prs[(repo, branch)] = pr
+        return prs
+
+    prs = asyncio.run(get_prs())
+
+    for row in rows:
+        if pr := prs.get((row.repo, row.branch)):
+            yield row._replace(
+                pr_title=pr.title,
+                pr_number=pr.number,
+            )
+        else:
+            yield row
 
 
 def _parse_xml_file(
@@ -157,6 +179,8 @@ def _parse_xml_file(
                     run_id=artifact["run_id"],
                     branch=artifact["branch"],
                     sha=artifact["commit"],
+                    pr_number=0,
+                    pr_title="",
                     file=file_name,
                     suite=test_suite.name,
                     suite_timestamp=datetime.fromisoformat(test_suite.timestamp),

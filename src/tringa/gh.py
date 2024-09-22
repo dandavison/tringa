@@ -21,18 +21,20 @@ async def api(endpoint: str) -> dict:
     return json.loads((await api_bytes(endpoint)).decode())
 
 
-async def pr(pr_identifier: Optional[str] = None) -> PR:
+async def pr(pr_identifier: Optional[str] = None, repo: Optional[str] = None) -> PR:
     cmd = [
         "pr",
         "view",
         "--json",
-        "headRefName,headRepository,headRepositoryOwner,url,title,number",
+        "headRefName,headRepository,headRepositoryOwner,title,number",
     ]
     if pr_identifier is not None:
         cmd.append(pr_identifier)
+    if repo is not None:
+        cmd.extend(["--repo", repo])
 
     try:
-        return PR(**json.loads(await _gh(*cmd)))
+        data = json.loads(await _gh(*cmd))
     except CalledProcessError as e:
         if "no pull requests found for branch" in e.stderr.decode():
             raise TringaException(
@@ -40,6 +42,13 @@ async def pr(pr_identifier: Optional[str] = None) -> PR:
             )
         else:
             raise
+    else:
+        return PR(
+            repo=f"{data['headRepositoryOwner']['login']}/{data['headRepository']['name']}",
+            number=data["number"],
+            title=data["title"],
+            branch=data["headRefName"],
+        )
 
 
 async def repo(repo_identifier: Optional[str] = None) -> Repo:

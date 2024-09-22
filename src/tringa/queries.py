@@ -7,7 +7,6 @@ or
 
 import typing
 from dataclasses import dataclass
-from datetime import datetime
 from textwrap import dedent
 from typing import Any, Mapping, TypedDict
 
@@ -66,9 +65,9 @@ class LastRunParams(TypedDict):
     branch: str
 
 
-_last_run = Query[tuple[str, str, datetime], LastRunParams](
+_last_run = Query[TestResult, LastRunParams](
     """
-    select repo, run_id, suite_timestamp from test
+    select * from test
     where repo = '{repo}' and branch = '{branch}'
     order by suite_timestamp desc
     limit 1;
@@ -78,5 +77,5 @@ _last_run = Query[tuple[str, str, datetime], LastRunParams](
 
 def last_run(db: DB, pr: PR) -> Run:
     # Hack: add pr to result
-    repo, run_id, time = _last_run(db, {"repo": pr.repo, "branch": pr.branch})
-    return Run(repo=repo, id=run_id, time=time, pr=pr)
+    tr = _last_run(db, {"repo": pr.repo, "branch": pr.branch})
+    return Run(repo=tr.repo, id=tr.run_id, time=tr.suite_timestamp, pr=pr)

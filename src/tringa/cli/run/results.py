@@ -59,7 +59,7 @@ class RunResults(Serializable):
                 yield ("PR", pr)
                 yield (
                     "Last run",
-                    f"[link={self.run.url()}]{humanize.naturaltime(self.run.time)}[/link]",
+                    f"[link={self.run.url}]{humanize.naturaltime(self.run.time)}[/link]",
                 )
                 yield (
                     "Failed tests",

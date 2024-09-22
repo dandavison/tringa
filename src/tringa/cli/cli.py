@@ -6,7 +6,7 @@ import typer
 
 import tringa.repl
 from tringa import cli
-from tringa.artifact import fetch_and_load_new_artifacts
+from tringa.fetch import fetch_and_load_new_artifacts
 from tringa.cli import pr, repo
 from tringa.exceptions import TringaException
 from tringa.msg import error, info

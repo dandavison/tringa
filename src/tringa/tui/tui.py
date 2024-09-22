@@ -29,13 +29,14 @@ class RunResultsWidget(Static):
                 "Repo",
                 f"[@click=app.open_url('https://github.com/{rr.run.repo}')]{rr.run.repo}[/]",
             )
-            yield (
-                "PR",
-                f"[@click=app.open_url('{pr.url}')]#{pr.number} {pr.title}[/]",
-            )
+            if pr is not None:
+                yield (
+                    "PR",
+                    f"[@click=app.open_url('{pr.url}')]#{pr.number} {pr.title}[/]",
+                )
             yield (
                 "Last run",
-                f"[@click=app.open_url('{rr.run.url()}')]{humanize.naturaltime(rr.run.time)}[/]",
+                f"[@click=app.open_url('{rr.run.url}')]{humanize.naturaltime(rr.run.time)}[/]",
             )
             yield (
                 "Failed tests",
@@ -150,11 +151,9 @@ if __name__ == "__main__":
                 id="id",
                 time=datetime.now(),
                 pr=PR(
+                    repo="repo",
                     title="title",
-                    url="url",
-                    headRefName="headRefName",
-                    headRepository={"name": "owner/repo"},
-                    headRepositoryOwner={"login": "owner"},
+                    branch="branch",
                     number=77,
                 ),
             ),
@@ -168,6 +167,8 @@ if __name__ == "__main__":
                         name="test_example",
                         run_id="run_id",
                         sha="sha",
+                        pr_number=77,
+                        pr_title="pr_title",
                         suite="suite",
                         suite_timestamp=datetime.now(),
                         suite_time=1,

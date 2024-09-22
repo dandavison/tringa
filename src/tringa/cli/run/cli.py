@@ -43,7 +43,7 @@ def repl(run: Run, repl: Optional[tringa.repl.Repl]) -> NoReturn:
 
 
 def rerun(run: Run) -> None:
-    asyncio.run(gh.rerun(run.pr.repo, run.id))
+    asyncio.run(gh.rerun(run.repo, run.id))
 
 
 def show(run: Run) -> None:

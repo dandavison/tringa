@@ -20,7 +20,7 @@ class Build(Serializable):
         return self.file.removesuffix(".xml")
 
     def __rich__(self) -> str:
-        return f"[link={self.run.url()}]{self.file}[/link]"
+        return f"[link={self.run.url}]{self.file}[/link]"
 
     def to_dict(self) -> dict:
         return {
@@ -36,7 +36,7 @@ class FlakyTestPR(Serializable):
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
-        table = Table(self.run.pr.title)
+        table = Table(self.run.title())
         for build in self.failed_builds:
             table.add_row(build)
         yield table
@@ -119,7 +119,7 @@ def get_flakes(db: DB) -> FlakyTests:
                         Run(
                             repo=tr.repo,
                             id=tr.run_id,
-                            pr=tr.pr,
+                            pr=tr.pr(),
                             time=tr.suite_timestamp,
                         ),
                     )

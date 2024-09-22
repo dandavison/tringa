@@ -23,6 +23,8 @@ CREATE TABLE test (
     branch VARCHAR,
     run_id VARCHAR,
     sha VARCHAR,
+    pr_number INT,
+    pr_title VARCHAR,
     file VARCHAR,
     suite VARCHAR,
     suite_timestamp TIMESTAMP,
@@ -49,6 +51,8 @@ INSERT INTO test (
     branch,
     run_id,
     sha,
+    pr_number,
+    pr_title,
     file,
     suite,
     suite_timestamp,
@@ -62,7 +66,7 @@ INSERT INTO test (
     message,
     text
 )
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 """
 
 

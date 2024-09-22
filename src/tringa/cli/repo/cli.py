@@ -17,18 +17,20 @@ from tringa.queries import EmptyParams, Query
 
 app = typer.Typer(rich_markup_mode="rich")
 
+RepoOption = Annotated[
+    Optional[str],
+    typer.Option(
+        help=(
+            "GitHub repository to target, e.g. `--repo dandavison/tringa`. "
+            "Defaults to the current repository."
+        ),
+    ),
+]
+
 
 @app.command()
 def repl(
-    repo: Annotated[
-        Optional[str],
-        typer.Option(
-            help=(
-                "Repository for which tests will be loaded into the DB, e.g. `--repo dandavison/tringa`. "
-                "Defaults to the current repository."
-            ),
-        ),
-    ] = None,
+    repo: RepoOption = None,
     repl: Annotated[
         Optional[tringa.repl.Repl],
         typer.Option(
@@ -51,15 +53,7 @@ def repl(
 
 @app.command()
 def show(
-    repo: Annotated[
-        Optional[str],
-        typer.Option(
-            help=(
-                "Repository to show, e.g. `--repo dandavison/tringa`. "
-                "Defaults to the current repository."
-            ),
-        ),
-    ] = None,
+    repo: RepoOption = None,
 ) -> None:
     """View a summary of tests in this repository."""
     if repo is None:
@@ -77,16 +71,8 @@ def sql(
         str,
         typer.Argument(help="SQL to execute."),
     ],
-    repo: Annotated[
-        Optional[str],
-        typer.Option(
-            help=(
-                "Repository to execute the query against, e.g. `--repo dandavison/tringa`. "
-                "Defaults to the current repository."
-            ),
-        ),
-    ] = None,
-):
+    repo: RepoOption = None,
+) -> None:
     """Execute a SQL query against tests in this repository."""
     if repo is None:
         repo = get_current_repo().nameWithOwner

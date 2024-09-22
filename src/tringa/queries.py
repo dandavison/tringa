@@ -39,23 +39,18 @@ class EmptyParams(TypedDict):
 count_test_results = Query[EmptyParams, int]("select count(*) from test;").fetchone
 
 
-class FailedTestsInRunParams(TypedDict):
-    repo: str
-    run_id: str
-
-
-_failed_tests_in_run = Query[FailedTestsInRunParams, FailedTestRow](
+_failed_tests = Query[EmptyParams, FailedTestRow](
     """
     select file, name, passed, flaky, count(*) as runs, max(time) as max_time, max(text) as text from test
-    where passed = false and skipped = false and run_id = '{run_id}' and repo = '{repo}'
+    where passed = false and skipped = false
     group by file, name, passed, flaky
     order by file, flaky desc, max_time desc;
     """
 ).fetchall
 
 
-def failed_tests_in_run(db: DB, params: FailedTestsInRunParams) -> list[FailedTestRow]:
-    return [FailedTestRow(*row) for row in _failed_tests_in_run(db, params)]
+def failed_tests(db: DB) -> list[FailedTestRow]:
+    return [FailedTestRow(*row) for row in _failed_tests(db, {})]
 
 
 class LastRunIdParams(TypedDict):

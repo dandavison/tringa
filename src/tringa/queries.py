@@ -52,7 +52,7 @@ class Query[R, P: Mapping[str, Any]]:
         self.sql = dedent(self.sql).strip()
 
 
-failed_tests = Query[TestResult, EmptyParams](
+failed_test_results = Query[TestResult, EmptyParams](
     """
     select * from test
     where passed = false and skipped = false

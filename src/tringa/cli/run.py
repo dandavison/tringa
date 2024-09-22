@@ -66,5 +66,5 @@ def tui(run: Run) -> NoReturn:  # type: ignore
 def _make_run_result(db: DB, run: Run) -> RunResult:
     return RunResult(
         run=run,
-        failed_tests=queries.failed_tests(db),
+        failed_tests=queries.failed_tests(db, {}),
     )

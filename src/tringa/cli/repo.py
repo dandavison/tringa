@@ -103,5 +103,5 @@ def get_current_repo() -> Repo:
 def _make_repo_result(db: DB, repo: str) -> RepoResult:
     return RepoResult(
         repo=repo,
-        failed_tests=queries.failed_tests(db),
+        failed_tests=queries.failed_tests(db, {}),
     )

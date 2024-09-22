@@ -15,7 +15,7 @@ from collections import defaultdict
 from tringa.db import DB
 from tringa.queries import EmptyParams, Query
 
-_query = Query[EmptyParams, tuple[str, str, bool, bool, str]](
+_query = Query[tuple[str, str, bool, bool, str], EmptyParams](
     "select classname, name, passed, skipped, branch from test;"
 ).fetchall
 

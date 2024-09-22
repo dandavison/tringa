@@ -45,7 +45,7 @@ class Run(Serializable):
             "repo": self.repo,
             "id": self.id,
             "time": self.time.isoformat(),
-            "pr": self.pr.__dict__ if self.pr is not None else None,
+            "pr": self.pr.__dict__,
         }
 
 

@@ -19,7 +19,7 @@ print_json = console.print_json
 def render_repo_result(repo_result: "RepoResult") -> RenderResult:
     rr = repo_result
 
-    def make_header():
+    def make_summary():
         def rows():
             yield (
                 "Repo",
@@ -35,7 +35,14 @@ def render_repo_result(repo_result: "RepoResult") -> RenderResult:
             table.add_row(*row)
         return table
 
-    yield make_header()
+    def make_flaky_tests():
+        table = Table("Flaky tests", show_header=True)
+        for (name,) in rr.flaky_tests:
+            table.add_row(name)
+        return table
+
+    yield make_summary()
+    yield make_flaky_tests()
 
 
 def render_run_result(run_result: "RunResult") -> RenderResult:

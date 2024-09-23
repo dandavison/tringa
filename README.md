@@ -73,11 +73,11 @@ D SELECT name, type FROM pragma_table_info('test');
 │ sha             │ VARCHAR   │
 │ file            │ VARCHAR   │
 │ suite           │ VARCHAR   │
-│ suite_timestamp │ TIMESTAMP │
-│ suite_time      │ FLOAT     │
+│ suite_time      │ TIMESTAMP │
+│ suite_duration  │ FLOAT     │
 │ name            │ VARCHAR   │
 │ classname       │ VARCHAR   │
-│ time            │ FLOAT     │
+│ duration        │ FLOAT     │
 │ passed          │ BOOLEAN   │
 │ skipped         │ BOOLEAN   │
 │ flaky           │ BOOLEAN   │

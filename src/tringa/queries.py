@@ -55,7 +55,7 @@ failed_test_results = Query[TestResult, EmptyParams](
     """
     select * from test
     where passed = false and skipped = false
-    order by file, flaky desc, time desc;
+    order by file, flaky desc, duration desc;
     """
 ).fetchall
 
@@ -69,7 +69,7 @@ _last_run = Query[TestResult, LastRunParams](
     """
     select * from test
     where repo = '{repo}' and branch = '{branch}'
-    order by suite_timestamp desc
+    order by suite_time desc
     limit 1;
     """
 ).fetchone
@@ -77,4 +77,4 @@ _last_run = Query[TestResult, LastRunParams](
 
 def last_run(db: DB, repo: str, branch: str) -> Run:
     tr = _last_run(db, {"repo": repo, "branch": branch})
-    return Run(repo=tr.repo, id=tr.run_id, time=tr.suite_timestamp, pr=tr.pr())
+    return Run(repo=tr.repo, id=tr.run_id, time=tr.suite_time, pr=tr.pr())

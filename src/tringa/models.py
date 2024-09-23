@@ -63,13 +63,13 @@ class TestResult(NamedTuple):
     # suite-level fields
     file: str
     suite: str
-    suite_timestamp: datetime
-    suite_time: float
+    suite_time: datetime
+    suite_duration: float
 
     # test-level fields
     name: str  # Name of the test function
     classname: str  # Name of class or module containing the test function
-    time: float
+    duration: float
     passed: bool
     skipped: bool
     flaky: bool

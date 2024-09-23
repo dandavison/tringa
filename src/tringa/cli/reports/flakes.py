@@ -87,7 +87,7 @@ def get_flakes(db: DB) -> FlakyTests:
         """
         select * from test
         where flaky = true and passed = false and skipped = false
-        order by name, branch, file, suite_timestamp desc;
+        order by name, branch, file, suite_time desc;
         """
     ).fetchall(db, {})
 
@@ -120,7 +120,7 @@ def get_flakes(db: DB) -> FlakyTests:
                             repo=tr.repo,
                             id=tr.run_id,
                             pr=tr.pr(),
-                            time=tr.suite_timestamp,
+                            time=tr.suite_time,
                         ),
                     )
                     for file, tr in file_to_latest_failure.items()

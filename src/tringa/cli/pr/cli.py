@@ -13,29 +13,29 @@ from tringa.models import PR, Run
 app = typer.Typer(rich_markup_mode="rich")
 
 
-PrIdentifier = Annotated[
+PrOption = Annotated[
     Optional[str],
-    typer.Argument(
+    typer.Option(
         help="""PR number, PR URL, branch name, or any other PR identifier accepted by the `gh` GitHub CLI tool (https://cli.github.com/manual/)."""
     ),
 ]
 
 
-def _get_pr(pr_identifier: PrIdentifier) -> PR:
-    pr = asyncio.run(gh.pr(pr_identifier))
+def _get_pr(pr_option: PrOption) -> PR:
+    pr = asyncio.run(gh.pr(pr_option))
     fetch_test_data(pr.repo)
     return pr
 
 
 @app.command()
-def flakes(pr_identifier: PrIdentifier = None) -> None:
+def flakes(pr: PrOption = None) -> None:
     """Summarize flaky tests in the latest run for this PR."""
-    tringa.cli.run.cli.flakes(_get_last_run(_get_pr(pr_identifier)))
+    tringa.cli.run.cli.flakes(_get_last_run(_get_pr(pr)))
 
 
 @app.command()
 def repl(
-    pr_identifier: PrIdentifier = None,
+    pr: PrOption = None,
     repl: Annotated[
         Optional[tringa.repl.Repl],
         typer.Option(
@@ -50,31 +50,31 @@ def repl(
     """
     Start an interactive REPL allowing execution of SQL queries against tests from the latest run for this PR.
     """
-    tringa.cli.run.cli.repl(_get_last_run(_get_pr(pr_identifier)), repl)
+    tringa.cli.run.cli.repl(_get_last_run(_get_pr(pr)), repl)
 
 
 @app.command()
-def rerun(pr_identifier: PrIdentifier = None) -> None:
+def rerun(pr: PrOption = None) -> None:
     """Rerun failed tests in the latest run for this PR."""
-    tringa.cli.run.cli.rerun(_get_last_run(_get_pr(pr_identifier)))
+    tringa.cli.run.cli.rerun(_get_last_run(_get_pr(pr)))
 
 
 @app.command()
-def show(pr_identifier: PrIdentifier = None) -> None:
+def show(pr: PrOption = None) -> None:
     """Summarize tests in the latest run for this PR."""
-    tringa.cli.run.cli.show(_get_last_run(_get_pr(pr_identifier)))
+    tringa.cli.run.cli.show(_get_last_run(_get_pr(pr)))
 
 
 @app.command()
-def sql(query: str, pr_identifier: PrIdentifier = None) -> None:
+def sql(query: str, pr: PrOption = None) -> None:
     """Execute a SQL query against tests in the latest run for this PR."""
-    tringa.cli.run.cli.sql(_get_last_run(_get_pr(pr_identifier)), query)
+    tringa.cli.run.cli.sql(_get_last_run(_get_pr(pr)), query)
 
 
 @app.command()
-def tui(pr_identifier: PrIdentifier = None) -> NoReturn:
+def tui(pr: PrOption = None) -> NoReturn:
     """Browse tests in the latest run for this PR using an interactive interface."""
-    tringa.cli.run.cli.tui(_get_last_run(_get_pr(pr_identifier)))
+    tringa.cli.run.cli.tui(_get_last_run(_get_pr(pr)))
 
 
 def _get_last_run(pr: PR) -> Run:

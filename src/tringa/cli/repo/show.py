@@ -5,7 +5,7 @@ from rich.table import Table
 from rich.text import Text
 
 from tringa.cli import reports
-from tringa.cli.reports import slowtests
+from tringa.cli.reports import flakes, slowtests
 from tringa.db import DB
 from tringa.queries import EmptyParams, Query
 
@@ -14,7 +14,7 @@ from tringa.queries import EmptyParams, Query
 class Report(reports.Report):
     repo: str
     prs: int
-    flaky_tests: int
+    flaky_tests: flakes.Report
     slow_tests: slowtests.Report
 
     def to_dict(self) -> dict:
@@ -38,11 +38,11 @@ class Report(reports.Report):
                 )
                 yield (
                     "Flaky tests",
-                    Text(str(self.flaky_tests), style="bold"),
+                    self.flaky_tests.summary(),
                 )
                 yield (
                     "Slow tests",
-                    self.slow_tests,
+                    self.slow_tests.summary(),
                 )
 
             table = Table(show_header=False)
@@ -55,14 +55,6 @@ class Report(reports.Report):
 
 
 def make_report(db: DB, repo: str) -> Report:
-    flaky_tests = Query[tuple[int], EmptyParams](
-        """
-        select count(*) from (
-            select distinct classname, name from test
-            where flaky = true
-        );
-        """
-    ).fetchone(db, {})[0]
     prs = Query[tuple[int], EmptyParams](
         """
         select count(*) from (
@@ -71,10 +63,9 @@ def make_report(db: DB, repo: str) -> Report:
         """
     ).fetchone(db, {})[0]
 
-    slow_tests = slowtests.make_report(db, limit=10)
     return Report(
         repo=repo,
         prs=prs,
-        flaky_tests=flaky_tests,
-        slow_tests=slow_tests,
+        flaky_tests=flakes.make_report(db),
+        slow_tests=slowtests.make_report(db, limit=10),
     )

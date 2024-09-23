@@ -75,8 +75,25 @@ class FlakyTest(reports.Report):
 
 
 @dataclass
+class Summary(reports.Report):
+    test_names: list[str]
+
+    def to_dict(self) -> dict:
+        return {"test_names": self.test_names}
+
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
+        for test in self.test_names:
+            yield test
+
+
+@dataclass
 class Report(reports.Report):
     tests: list[FlakyTest]
+
+    def summary(self) -> Summary:
+        return Summary(test_names=[t.name for t in self.tests])
 
     def to_dict(self) -> dict:
         return {"tests": [t.to_dict() for t in self.tests]}

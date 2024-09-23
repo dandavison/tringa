@@ -26,7 +26,7 @@ class PR:
 @dataclass
 class Run(Serializable):
     repo: str
-    id: str
+    id: int
     time: datetime
     pr: Optional[PR]
 
@@ -55,7 +55,7 @@ class TestResult(NamedTuple):
     # run-level fields
     repo: str
     branch: str
-    run_id: str
+    run_id: int
     sha: str
     pr: Optional[int]
     pr_title: Optional[str]

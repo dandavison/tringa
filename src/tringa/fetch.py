@@ -4,7 +4,7 @@ from datetime import datetime
 from fnmatch import fnmatch
 from io import BytesIO
 from itertools import chain, starmap
-from typing import AsyncIterator, Iterator, Optional, TypedDict
+from typing import AsyncIterator, Iterator, TypedDict
 from zipfile import ZipFile
 
 import junitparser.xunit2 as jup
@@ -26,13 +26,19 @@ class Artifact(TypedDict):
     commit: str
 
 
-def fetch_and_load_new_artifacts(
+def fetch_test_data(repo: str) -> None:
+    with cli.options.db_config.connect() as db:
+        # We fetch for the entire repo, even when the requested scope is `run`, in
+        # order to collect information across branches used to identify flakes.
+        _fetch_and_load_new_artifacts(db, [repo])
+
+
+def _fetch_and_load_new_artifacts(
     db: DB,
     repos: list[str],
-    branch: Optional[str] = None,
 ):
     artifact_name_globs = cli.options.artifact_name_globs or ["*"]
-    remote_artifacts = _list_remote_artifacts(repos, branch, artifact_name_globs)
+    remote_artifacts = _list_remote_artifacts(repos, artifact_name_globs)
     artifacts_to_download = _get_artifacts_not_in_db(db, remote_artifacts)
     downloaded_artifacts = _download_zip_artifacts(artifacts_to_download)
     rows = _parse_xml_from_zip_artifacts(downloaded_artifacts)
@@ -42,20 +48,12 @@ def fetch_and_load_new_artifacts(
 
 def _list_remote_artifacts(
     repos: list[str],
-    branch: Optional[str],
     artifact_name_globs: list[str],
 ) -> list[Artifact]:
-    def include(artifact: Artifact) -> bool:
-        if not any(fnmatch(artifact["name"], g) for g in artifact_name_globs):
-            return False
-        if branch is not None and artifact["branch"] != branch:
-            return False
-        return True
-
     async def _list_artifacts():
         return list(
             filter(
-                include,
+                lambda a: any(fnmatch(a["name"], g) for g in artifact_name_globs),
                 chain.from_iterable(
                     await asyncio.gather(*map(_list_remote_artifacts_for_repo, repos))
                 ),
@@ -167,7 +165,7 @@ def _parse_xml_file(
     if not xml:
         warn(f"Skipping empty XML file {file_name}")
         return
-    debug(f"Parsing {file_name}: xml is\n{xml}")
+    debug(f"Parsing {file_name}: xml length is {len(xml)}")
     for test_suite in jup.JUnitXml.fromstring(xml):
         for test_case in test_suite:
             # Passed test cases have no result. A failed/skipped test case will

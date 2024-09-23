@@ -9,7 +9,7 @@ from subprocess import CalledProcessError
 from typing import Optional
 
 from tringa.exceptions import TringaException
-from tringa.models import PR, Repo
+from tringa.models import PR
 from tringa.utils import execute
 
 
@@ -51,7 +51,7 @@ async def pr(pr_identifier: Optional[str] = None, repo: Optional[str] = None) ->
         )
 
 
-async def repo(repo_identifier: Optional[str] = None) -> Repo:
+async def repo(repo_identifier: Optional[str] = None) -> str:
     cmd = [
         "repo",
         "view",
@@ -61,7 +61,7 @@ async def repo(repo_identifier: Optional[str] = None) -> Repo:
     if repo_identifier is not None:
         cmd.append(repo_identifier)
 
-    return Repo(**json.loads(await _gh(*cmd)))
+    return json.loads(await _gh(*cmd))["nameWithOwner"]
 
 
 async def rerun(repo: str, run_id: str) -> None:

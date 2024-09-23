@@ -1,2 +1,2 @@
+from tringa.cli.repo.cli import _get_repo as _get_repo
 from tringa.cli.repo.cli import app as app
-from tringa.cli.repo.cli import get_current_repo as get_current_repo

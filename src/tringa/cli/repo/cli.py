@@ -12,7 +12,7 @@ from tringa.cli.output import tringa_print
 from tringa.cli.repo.flakes import get_flakes
 from tringa.cli.repo.summary import RepoSummary
 from tringa.db import DB
-from tringa.models import Repo
+from tringa.fetch import fetch_test_data
 from tringa.queries import EmptyParams, Query
 
 app = typer.Typer(rich_markup_mode="rich")
@@ -28,13 +28,20 @@ RepoOption = Annotated[
 ]
 
 
+def _get_repo(repo: RepoOption) -> str:
+    if repo is None:
+        # TODO: do without a network call; e.g. use `git remote`.
+        repo = asyncio.run(gh.repo())
+    fetch_test_data(repo)
+    return repo
+
+
 @app.command()
 def flakes(
     repo: RepoOption = None,
 ) -> None:
     """Show flaky tests in this repository."""
-    if repo is None:
-        repo = get_current_repo().nameWithOwner
+    repo = _get_repo(repo)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
         tringa_print(get_flakes(db))
 
@@ -56,8 +63,7 @@ def repl(
     """
     Start an interactive REPL allowing execution of SQL queries against tests in this repository.
     """
-    if repo is None:
-        repo = get_current_repo().nameWithOwner
+    repo = _get_repo(repo)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
         tringa.repl.repl(db, repl)
 
@@ -67,10 +73,9 @@ def show(
     repo: RepoOption = None,
 ) -> None:
     """View a summary of tests in this repository."""
-    if repo is None:
-        repo = get_current_repo().nameWithOwner
+    repo = _get_repo(repo)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
-        tringa_print(_make_repo_result(db, repo))
+        tringa_print(_make_repo_summary(db, repo))
 
 
 @app.command()
@@ -82,18 +87,12 @@ def sql(
     repo: RepoOption = None,
 ) -> None:
     """Execute a SQL query against tests in this repository."""
-    if repo is None:
-        repo = get_current_repo().nameWithOwner
+    repo = _get_repo(repo)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
         tringa_print(db.connection.sql(query))
 
 
-def get_current_repo() -> Repo:
-    # TODO: do without a network call; e.g. use `git remote`.
-    return asyncio.run(gh.repo())
-
-
-def _make_repo_result(db: DB, repo: str) -> RepoSummary:
+def _make_repo_summary(db: DB, repo: str) -> RepoSummary:
     flaky_tests = Query[tuple[str], EmptyParams](
         """
     select distinct name from test

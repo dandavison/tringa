@@ -11,7 +11,7 @@ from textwrap import dedent
 from typing import Any, Mapping, TypedDict
 
 from tringa.db import DB
-from tringa.models import PR, Run, TestResult
+from tringa.models import Run, TestResult
 
 
 class EmptyParams(TypedDict):
@@ -75,7 +75,6 @@ _last_run = Query[TestResult, LastRunParams](
 ).fetchone
 
 
-def last_run(db: DB, pr: PR) -> Run:
-    # Hack: add pr to result
-    tr = _last_run(db, {"repo": pr.repo, "branch": pr.branch})
-    return Run(repo=tr.repo, id=tr.run_id, time=tr.suite_timestamp, pr=pr)
+def last_run(db: DB, repo: str, branch: str) -> Run:
+    tr = _last_run(db, {"repo": repo, "branch": branch})
+    return Run(repo=tr.repo, id=tr.run_id, time=tr.suite_timestamp, pr=tr.pr())

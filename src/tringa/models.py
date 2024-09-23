@@ -9,11 +9,6 @@ class Serializable(Protocol):
 
 
 @dataclass
-class Repo:
-    nameWithOwner: str
-
-
-@dataclass
 class PR:
     repo: str
     number: int

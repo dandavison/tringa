@@ -5,7 +5,7 @@ from queue import Queue
 from threading import Thread
 from typing import AsyncIterator, Iterator, TypeVar
 
-from tringa.msg import info
+from tringa.msg import debug
 
 T = TypeVar("T")
 
@@ -31,7 +31,7 @@ class async_to_sync_iterator[T](Iterator[T]):
 
 
 async def execute(cmd: list[str]) -> bytes:
-    info(" ".join(cmd))
+    debug(" ".join(cmd))
     process = await asyncio.create_subprocess_exec(
         *cmd,
         stdout=asyncio.subprocess.PIPE,

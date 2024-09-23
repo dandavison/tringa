@@ -11,6 +11,7 @@ from textual.css.query import NoMatches
 from textual.widgets import Collapsible, ListItem, ListView, RichLog, Static
 from textual.widgets._collapsible import CollapsibleTitle
 
+from tringa.cli.reports import flakes
 from tringa.cli.run.show import Report
 from tringa.models import PR, Run, TestResult
 
@@ -188,5 +189,6 @@ ZeroDivisionError: division by zero""",
                 ]
                 * 7
             ),
+            flaky_tests=flakes.Report(tests=[]),
         )
     )

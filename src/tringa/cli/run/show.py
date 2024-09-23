@@ -7,6 +7,7 @@ from rich.text import Text
 
 from tringa import cli, queries
 from tringa.cli import reports
+from tringa.cli.reports import flakes
 from tringa.db import DB
 from tringa.models import Run, TestResult
 
@@ -15,6 +16,7 @@ from tringa.models import Run, TestResult
 class Report(reports.Report):
     run: Run
     failed_tests: list[TestResult]
+    flaky_tests: flakes.Report
 
     def to_dict(self) -> dict:
         return {
@@ -42,6 +44,10 @@ class Report(reports.Report):
                     "Failed tests",
                     Text(str(len(self.failed_tests)), style="bold"),
                 )
+                yield (
+                    "Flaky tests",
+                    self.flaky_tests.summary(),
+                )
 
             table = Table(show_header=False)
             for row in rows():
@@ -68,4 +74,5 @@ def make_report(db: DB, run: Run) -> Report:
     return Report(
         run=run,
         failed_tests=queries.failed_test_results(db, {}),
+        flaky_tests=flakes.make_report(db),
     )

@@ -76,16 +76,19 @@ class FlakyTest(reports.Report):
 
 @dataclass
 class Summary(reports.Report):
-    test_names: list[str]
+    tests: list[FlakyTest]
 
     def to_dict(self) -> dict:
-        return {"test_names": self.test_names}
+        return {"test_names": [t.name for t in self.tests]}
 
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
-        for test in self.test_names:
-            yield test
+        for test in self.tests:
+            if run := next((pr.run for pr in test.prs_with_failures), None):
+                yield f"[link={run.url}]{test.name}[/link]"
+            else:
+                yield test.name
 
 
 @dataclass
@@ -93,7 +96,7 @@ class Report(reports.Report):
     tests: list[FlakyTest]
 
     def summary(self) -> Summary:
-        return Summary(test_names=[t.name for t in self.tests])
+        return Summary(tests=self.tests)
 
     def to_dict(self) -> dict:
         return {"tests": [t.to_dict() for t in self.tests]}

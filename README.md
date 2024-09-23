@@ -46,10 +46,10 @@ $ tringa pr --repl sql
 ```
 
 ```
-D select artifact_name, name from test
+D select artifact, name from test
   where passed = false and skipped = false and repo = 'temporalio/cli';
 ┌───────────────────────────────────────────┬─────────────────────────────────────────────────────────┐
-│               artifact_name               │                          name                           │
+│               artifact                    │                          name                           │
 │                  varchar                  │                         varchar                         │
 ├───────────────────────────────────────────┼─────────────────────────────────────────────────────────┤
 │ junit-xml--10631569269--1--ubuntu-latest  │ TestSharedServerSuite/TestWorkflow_Update_Execute       │
@@ -66,7 +66,7 @@ D SELECT name, type FROM pragma_table_info('test');
 │      name       │   type    │
 │     varchar     │  varchar  │
 ├─────────────────┼───────────┤
-│ artifact_name   │ VARCHAR   │
+│ artifact        │ VARCHAR   │
 │ repo            │ VARCHAR   │
 │ branch          │ VARCHAR   │
 │ run_id          │ VARCHAR   │

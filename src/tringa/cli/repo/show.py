@@ -58,7 +58,7 @@ def make_report(db: DB, repo: str) -> Report:
     prs = Query[tuple[int], EmptyParams](
         """
         select count(*) from (
-            select distinct pr_number from test
+            select distinct pr from test
         );
         """
     ).fetchone(db, {})[0]

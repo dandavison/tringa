@@ -68,4 +68,4 @@ _last_run = Query[TestResult, LastRunParams](
 
 def last_run(db: DB, repo: str, branch: str) -> Run:
     tr = _last_run(db, {"repo": repo, "branch": branch})
-    return Run(repo=tr.repo, id=tr.run_id, time=tr.suite_time, pr=tr.pr())
+    return Run(repo=tr.repo, id=tr.run_id, time=tr.suite_time, pr=tr.make_pr())

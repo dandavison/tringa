@@ -37,8 +37,8 @@ def _fetch_and_load_new_artifacts(
     db: DB,
     repos: list[str],
 ):
-    artifact_name_globs = cli.options.artifact_name_globs or ["*"]
-    remote_artifacts = _list_remote_artifacts(repos, artifact_name_globs)
+    artifact_globs = cli.options.artifact_globs or ["*"]
+    remote_artifacts = _list_remote_artifacts(repos, artifact_globs)
     artifacts_to_download = _get_artifacts_not_in_db(db, remote_artifacts)
     downloaded_artifacts = _download_zip_artifacts(artifacts_to_download)
     rows = _parse_xml_from_zip_artifacts(downloaded_artifacts)
@@ -48,12 +48,12 @@ def _fetch_and_load_new_artifacts(
 
 def _list_remote_artifacts(
     repos: list[str],
-    artifact_name_globs: list[str],
+    artifact_globs: list[str],
 ) -> list[Artifact]:
     async def _list_artifacts():
         return list(
             filter(
-                lambda a: any(fnmatch(a["name"], g) for g in artifact_name_globs),
+                lambda a: any(fnmatch(a["name"], g) for g in artifact_globs),
                 chain.from_iterable(
                     await asyncio.gather(*map(_list_remote_artifacts_for_repo, repos))
                 ),
@@ -86,7 +86,7 @@ def _get_artifacts_not_in_db(
     existing_artifacts = {
         s
         for (s,) in db.connection.execute(
-            "SELECT DISTINCT artifact_name FROM test"
+            "SELECT DISTINCT artifact FROM test"
         ).fetchall()
     }
     return [a for a in available_artifacts if a["name"] not in existing_artifacts]
@@ -150,7 +150,7 @@ def _fetch_pr_info(rows: list[TestResult]) -> Iterator[TestResult]:
         if pr := prs.get((row.repo, row.branch)):
             yield row._replace(
                 pr_title=pr.title,
-                pr_number=pr.number,
+                pr=pr.number,
             )
         else:
             yield row
@@ -172,11 +172,11 @@ def _parse_xml_file(
             for result in test_case.result or [empty_result]:
                 yield TestResult(
                     repo=artifact["repo"],
-                    artifact_name=artifact["name"],
+                    artifact=artifact["name"],
                     run_id=artifact["run_id"],
                     branch=artifact["branch"],
                     sha=artifact["commit"],
-                    pr_number=0,
+                    pr=0,
                     pr_title="",
                     file=file_name,
                     suite=test_suite.name,

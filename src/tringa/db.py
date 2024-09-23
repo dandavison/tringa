@@ -18,12 +18,12 @@ from tringa.msg import debug
 
 CREATE_SCHEMA_SQL = """
 CREATE TABLE test (
-    artifact_name VARCHAR,
+    artifact VARCHAR,
     repo VARCHAR,
     branch VARCHAR,
     run_id VARCHAR,
     sha VARCHAR,
-    pr_number INT,
+    pr INT,
     pr_title VARCHAR,
     file VARCHAR,
     suite VARCHAR,
@@ -41,17 +41,17 @@ CREATE TABLE test (
 """
 
 CREATE_INDEX_SQL = """
-CREATE INDEX idx_artifact_name ON test(artifact_name);
+CREATE INDEX idx_artifact ON test(artifact)
 """
 
 INSERT_ROWS_SQL = """
 INSERT INTO test (
-    artifact_name,
+    artifact,
     repo,
     branch,
     run_id,
     sha,
-    pr_number,
+    pr,
     pr_title,
     file,
     suite,

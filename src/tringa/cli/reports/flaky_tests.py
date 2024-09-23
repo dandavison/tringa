@@ -145,7 +145,7 @@ def make_report(db: DB) -> Report:
                         Run(
                             repo=tr.repo,
                             id=tr.run_id,
-                            pr=tr.pr(),
+                            pr=tr.make_pr(),
                             time=tr.suite_time,
                         ),
                     )

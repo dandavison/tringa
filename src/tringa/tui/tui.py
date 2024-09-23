@@ -161,14 +161,14 @@ if __name__ == "__main__":
             failed_tests=failed_tests.Report(
                 tests=[
                     TestResult(
-                        artifact_name="artifact_name",
+                        artifact="artifact",
                         repo="repo",
                         branch="branch",
                         file="example.py",
                         name="test_example",
                         run_id="run_id",
                         sha="sha",
-                        pr_number=77,
+                        pr=77,
                         pr_title="pr_title",
                         suite="suite",
                         suite_time=datetime.now(),

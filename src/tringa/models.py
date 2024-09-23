@@ -50,14 +50,14 @@ class Run(Serializable):
 
 
 class TestResult(NamedTuple):
-    artifact_name: str
+    artifact: str
 
     # run-level fields
     repo: str
     branch: str
     run_id: str
     sha: str
-    pr_number: Optional[int]
+    pr: Optional[int]
     pr_title: Optional[str]
 
     # suite-level fields
@@ -77,17 +77,17 @@ class TestResult(NamedTuple):
     text: Optional[str]  # Stack trace or code context of failure
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}({self.artifact_name}, {self.repo}, {self.branch}, {self.run_id}, {self.file}, {self.name})"
+        return f"{self.__class__.__name__}({self.artifact}, {self.repo}, {self.branch}, {self.run_id}, {self.file}, {self.name})"
 
     def __repr__(self) -> str:
         return self.__str__()
 
-    def pr(self) -> Optional[PR]:
-        if self.pr_number is None or self.pr_title is None:
+    def make_pr(self) -> Optional[PR]:
+        if self.pr is None or self.pr_title is None:
             return None
         return PR(
             repo=self.repo,
-            number=self.pr_number,
+            number=self.pr,
             title=self.pr_title,
             branch=self.branch,
         )

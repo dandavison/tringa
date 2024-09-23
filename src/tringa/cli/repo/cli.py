@@ -3,14 +3,13 @@ from typing import Annotated, NoReturn, Optional
 
 import typer
 
-import tringa.cli.run.cli
 import tringa.repl
 import tringa.tui.tui
 from tringa import cli, gh, scoped_db
 from tringa.annotations import flaky as flaky
 from tringa.cli.output import tringa_print
-from tringa.cli.reports.flakes import get_flakes
-from tringa.cli.repo.show import make_repo_summary
+from tringa.cli.repo import show
+from tringa.cli.reports import flakes
 from tringa.fetch import fetch_test_data
 
 app = typer.Typer(rich_markup_mode="rich")
@@ -34,14 +33,14 @@ def _get_repo(repo: RepoOption) -> str:
     return repo
 
 
-@app.command()
-def flakes(
+@app.command("flakes")
+def _flakes(
     repo: RepoOption = None,
 ) -> None:
     """Show flaky tests in this repository."""
     repo = _get_repo(repo)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
-        tringa_print(get_flakes(db))
+        tringa_print(flakes.make_report(db))
 
 
 @app.command()
@@ -66,14 +65,14 @@ def repl(
         tringa.repl.repl(db, repl)
 
 
-@app.command()
-def show(
+@app.command("show")
+def _show(
     repo: RepoOption = None,
 ) -> None:
     """View a summary of tests in this repository."""
     repo = _get_repo(repo)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
-        tringa_print(make_repo_summary(db, repo))
+        tringa_print(show.make_report(db, repo))
 
 
 @app.command()

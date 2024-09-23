@@ -11,12 +11,12 @@ from textual.css.query import NoMatches
 from textual.widgets import Collapsible, ListItem, ListView, RichLog, Static
 from textual.widgets._collapsible import CollapsibleTitle
 
-from tringa.cli.run.results import RunResults
+from tringa.cli.run.show import Report
 from tringa.models import PR, Run, TestResult
 
 
 class RunResultsWidget(Static):
-    def __init__(self, run_results: RunResults):
+    def __init__(self, run_results: Report):
         super().__init__()
         self.run_result = run_results
 
@@ -69,7 +69,7 @@ class RunResultApp(App):
         Binding("left", "hide_test_output", "Hide test output"),
     ]
 
-    def __init__(self, run_result: RunResults):
+    def __init__(self, run_result: Report):
         super().__init__()
         self.run_result = run_result
 
@@ -138,14 +138,14 @@ class RunResultApp(App):
                         collapsible.collapsed = not visible
 
 
-def tui(run_result: RunResults) -> None:
+def tui(run_result: Report) -> None:
     app = RunResultApp(run_result)
     app.run()
 
 
 if __name__ == "__main__":
     tui(
-        RunResults(
+        Report(
             run=Run(
                 repo="repo",
                 id="id",

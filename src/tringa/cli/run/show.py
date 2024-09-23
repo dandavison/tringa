@@ -6,12 +6,14 @@ from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
 from rich.text import Text
 
-from tringa import cli
-from tringa.models import Run, Serializable, TestResult, TreeSitterLanguageName
+from tringa import cli, queries
+from tringa.cli import reports
+from tringa.db import DB
+from tringa.models import Run, TestResult, TreeSitterLanguageName
 
 
 @dataclass
-class RunResults(Serializable):
+class Report(reports.Report):
     run: Run
     failed_tests: list[TestResult]
 
@@ -73,10 +75,10 @@ class RunResults(Serializable):
 
         yield make_header()
         if cli.options.verbose > 1:
-            yield from make_failed_tests(self.failed_tests)
+            yield from _make_failed_tests(self.failed_tests)
 
 
-def make_failed_tests(failed_tests: list["TestResult"]):
+def _make_failed_tests(failed_tests: list[TestResult]):
     def rows():
         for test in failed_tests:
             yield (test.name, test.text)
@@ -85,3 +87,10 @@ def make_failed_tests(failed_tests: list["TestResult"]):
         table = Table(name)
         table.add_row(text)
         yield table
+
+
+def make_report(db: DB, run: Run) -> Report:
+    return Report(
+        run=run,
+        failed_tests=queries.failed_test_results(db, {}),
+    )

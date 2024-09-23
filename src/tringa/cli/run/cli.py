@@ -1,21 +1,22 @@
 import asyncio
 from typing import NoReturn, Optional
 
+import tringa.cli.reports.flakes
 import tringa.cli.run.cli
+import tringa.cli.run.show
 import tringa.repl
 import tringa.tui.tui
-from tringa import cli, gh, queries, scoped_db
+from tringa import cli, gh, scoped_db
 from tringa.annotations import flaky as flaky
 from tringa.cli.output import tringa_print
-from tringa.cli.reports.flakes import get_flakes
-from tringa.cli.run.results import RunResults
-from tringa.db import DB
 from tringa.models import Run
+
+reports = tringa.cli.reports
 
 
 def flakes(run: Run) -> None:
     with scoped_db.connect(cli.options.db_config, repo=run.repo, run_id=run.id) as db:
-        tringa_print(get_flakes(db))
+        tringa_print(reports.flakes.make_report(db))
 
 
 def repl(run: Run, repl: Optional[tringa.repl.Repl]) -> NoReturn:
@@ -29,7 +30,7 @@ def rerun(run: Run) -> None:
 
 def show(run: Run) -> None:
     with scoped_db.connect(cli.options.db_config, repo=run.repo, run_id=run.id) as db:
-        tringa_print(_make_run_result(db, run))
+        tringa_print(tringa.cli.run.show.make_report(db, run))
 
 
 def sql(run: Run, query: str) -> None:
@@ -42,11 +43,4 @@ def sql(run: Run, query: str) -> None:
 
 def tui(run: Run) -> NoReturn:  # type: ignore
     with scoped_db.connect(cli.options.db_config, repo=run.repo, run_id=run.id) as db:
-        tringa.tui.tui.tui(run_result=_make_run_result(db, run))
-
-
-def _make_run_result(db: DB, run: Run) -> RunResults:
-    return RunResults(
-        run=run,
-        failed_tests=queries.failed_test_results(db, {}),
-    )
+        tringa.tui.tui.tui(run_result=tringa.cli.run.show.make_report(db, run))

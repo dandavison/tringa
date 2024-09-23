@@ -5,14 +5,14 @@ from typing import DefaultDict
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
 
-from tringa.cli.reports import Report
+from tringa.cli import reports
 from tringa.db import DB
 from tringa.models import Run, TestResult
 from tringa.queries import EmptyParams, Query
 
 
 @dataclass
-class Build(Report):
+class Build(reports.Report):
     file: str
     run: Run
 
@@ -35,7 +35,7 @@ class Build(Report):
 
 
 @dataclass
-class FlakyTestPR(Report):
+class FlakyTestPR(reports.Report):
     run: Run
     failed_builds: list[Build]
 
@@ -55,7 +55,7 @@ class FlakyTestPR(Report):
 
 
 @dataclass
-class FlakyTest(Report):
+class FlakyTest(reports.Report):
     name: str
     prs_with_failures: list[FlakyTestPR]
 
@@ -75,7 +75,7 @@ class FlakyTest(Report):
 
 
 @dataclass
-class FlakyTests(Report):
+class Report(reports.Report):
     tests: list[FlakyTest]
 
     def to_dict(self) -> dict:
@@ -88,7 +88,7 @@ class FlakyTests(Report):
             yield test
 
 
-def get_flakes(db: DB) -> FlakyTests:
+def make_report(db: DB) -> Report:
     test_results = Query[TestResult, EmptyParams](
         """
         select * from test
@@ -142,4 +142,4 @@ def get_flakes(db: DB) -> FlakyTests:
                 )
             yield FlakyTest(name, prs_with_failures)
 
-    return FlakyTests(tests=list(flaky_tests()))
+    return Report(tests=list(flaky_tests()))

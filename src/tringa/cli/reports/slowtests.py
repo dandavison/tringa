@@ -5,13 +5,13 @@ from typing import Optional
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
 
-from tringa.cli.reports import Report
+from tringa.cli import reports
 from tringa.db import DB
 from tringa.queries import EmptyParams, Query
 
 
 @dataclass
-class SlowTest(Report):
+class SlowTest(reports.Report):
     name: str
     max_successful_duration: Optional[float]
     max_failed_duration: Optional[float]
@@ -30,7 +30,7 @@ class SlowTest(Report):
 
 
 @dataclass
-class SlowTests(Report):
+class Report(reports.Report):
     tests: list[SlowTest]
 
     def to_dict(self) -> dict:
@@ -64,7 +64,7 @@ class SlowTests(Report):
         yield table
 
 
-def get_slow_tests(db: DB, threshold: float = 0.0, limit: int = 30) -> SlowTests:
+def make_report(db: DB, threshold: float = 0.0, limit: int = 30) -> Report:
     successful_tests = Query[tuple[str, float], EmptyParams](
         f"""
         select name, max(duration) from test
@@ -97,7 +97,7 @@ def get_slow_tests(db: DB, threshold: float = 0.0, limit: int = 30) -> SlowTests
     for name, duration in failed_tests:
         slow_tests[name]["max_failed_duration"] = duration
 
-    return SlowTests(
+    return Report(
         tests=[
             SlowTest(
                 name=name,

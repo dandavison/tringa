@@ -4,18 +4,18 @@ from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
 from rich.text import Text
 
-from tringa.cli.reports.slowtests import SlowTests, get_slow_tests
+from tringa.cli import reports
+from tringa.cli.reports import slowtests
 from tringa.db import DB
-from tringa.models import Serializable
 from tringa.queries import EmptyParams, Query
 
 
 @dataclass
-class RepoSummary(Serializable):
+class Report(reports.Report):
     repo: str
     prs: int
     flaky_tests: int
-    slow_tests: SlowTests
+    slow_tests: slowtests.Report
 
     def to_dict(self) -> dict:
         return {
@@ -54,7 +54,7 @@ class RepoSummary(Serializable):
         yield make_summary()
 
 
-def make_repo_summary(db: DB, repo: str) -> RepoSummary:
+def make_report(db: DB, repo: str) -> Report:
     flaky_tests = Query[tuple[int], EmptyParams](
         """
         select count(*) from (
@@ -71,8 +71,8 @@ def make_repo_summary(db: DB, repo: str) -> RepoSummary:
         """
     ).fetchone(db, {})[0]
 
-    slow_tests = get_slow_tests(db, limit=10)
-    return RepoSummary(
+    slow_tests = slowtests.make_report(db, limit=10)
+    return Report(
         repo=repo,
         prs=prs,
         flaky_tests=flaky_tests,

@@ -4,7 +4,7 @@ import duckdb
 import typer
 
 from tringa import cli
-from tringa.cli import pr, repo
+from tringa.cli import internals, pr, repo
 from tringa.exceptions import TringaException
 from tringa.msg import error, info
 from tringa.utils import tee as tee
@@ -15,6 +15,7 @@ app.callback()(cli.set_options)
 
 app.add_typer(pr.app, name="pr")
 app.add_typer(repo.app, name="repo")
+app.add_typer(internals.app, name="internals")
 
 
 @app.command()

@@ -57,17 +57,20 @@ class RepoSummary(Serializable):
 def make_repo_summary(db: DB, repo: str) -> RepoSummary:
     flaky_tests = Query[tuple[int], EmptyParams](
         """
-    select count(*) from test
-    where flaky = true;
-    """
+        select count(*) from (
+            select distinct classname, name from test
+            where flaky = true
+        );
+        """
     ).fetchone(db, {})[0]
-    prs = len(
-        Query[tuple[str], EmptyParams](
-            """
-    select distinct(pr_number) from test;
-    """,
-        ).fetchall(db, {})
-    )
+    prs = Query[tuple[int], EmptyParams](
+        """
+        select count(*) from (
+            select distinct pr_number from test
+        );
+        """
+    ).fetchone(db, {})[0]
+
     slow_tests = get_slow_tests(db, limit=10)
     return RepoSummary(
         repo=repo,

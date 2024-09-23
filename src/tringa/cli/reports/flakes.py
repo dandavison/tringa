@@ -5,13 +5,14 @@ from typing import DefaultDict
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
 
+from tringa.cli.reports import Report
 from tringa.db import DB
-from tringa.models import Run, Serializable, TestResult
+from tringa.models import Run, TestResult
 from tringa.queries import EmptyParams, Query
 
 
 @dataclass
-class Build(Serializable):
+class Build(Report):
     file: str
     run: Run
 
@@ -22,6 +23,11 @@ class Build(Serializable):
     def __rich__(self) -> str:
         return f"[link={self.run.url}]{self.file}[/link]"
 
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
+        yield self.__rich__()
+
     def to_dict(self) -> dict:
         return {
             "name": self.file,
@@ -29,7 +35,7 @@ class Build(Serializable):
 
 
 @dataclass
-class FlakyTestPR(Serializable):
+class FlakyTestPR(Report):
     run: Run
     failed_builds: list[Build]
 
@@ -49,7 +55,7 @@ class FlakyTestPR(Serializable):
 
 
 @dataclass
-class FlakyTest(Serializable):
+class FlakyTest(Report):
     name: str
     prs_with_failures: list[FlakyTestPR]
 
@@ -69,7 +75,7 @@ class FlakyTest(Serializable):
 
 
 @dataclass
-class FlakyTests(Serializable):
+class FlakyTests(Report):
     tests: list[FlakyTest]
 
     def to_dict(self) -> dict:

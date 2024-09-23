@@ -1,7 +1,7 @@
 import asyncio
 from typing import NoReturn, Optional
 
-import tringa.cli.reports.flakes
+import tringa.cli.reports.flaky_tests
 import tringa.cli.run.cli
 import tringa.cli.run.show
 import tringa.repl
@@ -16,7 +16,7 @@ reports = tringa.cli.reports
 
 def flakes(run: Run) -> None:
     with scoped_db.connect(cli.options.db_config, repo=run.repo, run_id=run.id) as db:
-        tringa_print(reports.flakes.make_report(db))
+        tringa_print(reports.flaky_tests.make_report(db))
 
 
 def repl(run: Run, repl: Optional[tringa.repl.Repl]) -> NoReturn:

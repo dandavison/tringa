@@ -5,7 +5,7 @@ from rich.table import Table
 from rich.text import Text
 
 from tringa.cli import reports
-from tringa.cli.reports import flakes, slowtests
+from tringa.cli.reports import flaky_tests, slow_tests
 from tringa.db import DB
 from tringa.queries import EmptyParams, Query
 
@@ -14,8 +14,8 @@ from tringa.queries import EmptyParams, Query
 class Report(reports.Report):
     repo: str
     prs: int
-    flaky_tests: flakes.Report
-    slow_tests: slowtests.Report
+    flaky_tests: flaky_tests.Report
+    slow_tests: slow_tests.Report
 
     def to_dict(self) -> dict:
         return {
@@ -66,6 +66,6 @@ def make_report(db: DB, repo: str) -> Report:
     return Report(
         repo=repo,
         prs=prs,
-        flaky_tests=flakes.make_report(db),
-        slow_tests=slowtests.make_report(db, limit=10),
+        flaky_tests=flaky_tests.make_report(db),
+        slow_tests=slow_tests.make_report(db, limit=10),
     )

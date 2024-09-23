@@ -5,7 +5,7 @@ from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
 
 from tringa.cli import reports
-from tringa.cli.reports import failedtests, flakes
+from tringa.cli.reports import failed_tests, flaky_tests
 from tringa.db import DB
 from tringa.models import Run
 
@@ -13,8 +13,8 @@ from tringa.models import Run
 @dataclass
 class Report(reports.Report):
     run: Run
-    failed_tests: failedtests.Report
-    flaky_tests: flakes.Report
+    failed_tests: failed_tests.Report
+    flaky_tests: flaky_tests.Report
 
     def to_dict(self) -> dict:
         return {
@@ -55,6 +55,6 @@ class Report(reports.Report):
 def make_report(db: DB, run: Run) -> Report:
     return Report(
         run=run,
-        failed_tests=failedtests.make_report(db),
-        flaky_tests=flakes.make_report(db),
+        failed_tests=failed_tests.make_report(db),
+        flaky_tests=flaky_tests.make_report(db),
     )

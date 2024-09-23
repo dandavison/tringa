@@ -9,7 +9,7 @@ from tringa import cli, gh, scoped_db
 from tringa.annotations import flaky as flaky
 from tringa.cli.output import tringa_print
 from tringa.cli.repo import show
-from tringa.cli.reports import flakes
+from tringa.cli.reports import flaky_tests
 from tringa.fetch import fetch_test_data
 
 app = typer.Typer(rich_markup_mode="rich")
@@ -40,7 +40,7 @@ def _flakes(
     """Show flaky tests in this repository."""
     repo = _get_repo(repo)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
-        tringa_print(flakes.make_report(db))
+        tringa_print(flaky_tests.make_report(db))
 
 
 @app.command()

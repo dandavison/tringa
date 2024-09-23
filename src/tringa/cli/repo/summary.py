@@ -4,13 +4,16 @@ from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
 from rich.text import Text
 
+from tringa.db import DB
 from tringa.models import Serializable
+from tringa.queries import EmptyParams, Query
 
 
 @dataclass
 class RepoSummary(Serializable):
     repo: str
-    flaky_tests: list[tuple[str]]
+    prs: int
+    flaky_tests: int
 
     def to_dict(self) -> dict:
         return {
@@ -28,8 +31,12 @@ class RepoSummary(Serializable):
                     f"[link=https://github.com/{self.repo}]{self.repo}[/link]",
                 )
                 yield (
+                    "PRs",
+                    Text(str(self.prs), style="bold"),
+                )
+                yield (
                     "Flaky tests",
-                    Text(str(len(self.flaky_tests)), style="bold"),
+                    Text(str(self.flaky_tests), style="bold"),
                 )
 
             table = Table(show_header=False)
@@ -38,3 +45,25 @@ class RepoSummary(Serializable):
             return table
 
         yield make_summary()
+
+
+def make_repo_summary(db: DB, repo: str) -> RepoSummary:
+    flaky_tests = Query[tuple[int], EmptyParams](
+        """
+    select count(*) from test
+    where flaky = true;
+    """
+    ).fetchone(db, {})[0]
+    prs = len(
+        Query[tuple[str], EmptyParams](
+            """
+    select distinct(pr_number) from test;
+    """,
+        ).fetchall(db, {})
+    )
+
+    return RepoSummary(
+        repo=repo,
+        prs=prs,
+        flaky_tests=flaky_tests,
+    )

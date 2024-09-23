@@ -10,10 +10,8 @@ from tringa import cli, gh, scoped_db
 from tringa.annotations import flaky as flaky
 from tringa.cli.output import tringa_print
 from tringa.cli.repo.flakes import get_flakes
-from tringa.cli.repo.summary import RepoSummary
-from tringa.db import DB
+from tringa.cli.repo.summary import make_repo_summary
 from tringa.fetch import fetch_test_data
-from tringa.queries import EmptyParams, Query
 
 app = typer.Typer(rich_markup_mode="rich")
 
@@ -75,7 +73,7 @@ def show(
     """View a summary of tests in this repository."""
     repo = _get_repo(repo)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
-        tringa_print(_make_repo_summary(db, repo))
+        tringa_print(make_repo_summary(db, repo))
 
 
 @app.command()
@@ -90,18 +88,3 @@ def sql(
     repo = _get_repo(repo)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
         tringa_print(db.connection.sql(query))
-
-
-def _make_repo_summary(db: DB, repo: str) -> RepoSummary:
-    flaky_tests = Query[tuple[str], EmptyParams](
-        """
-    select distinct name from test
-    where flaky = true
-    order by file, time desc;
-    """
-    ).fetchall(db, {})
-
-    return RepoSummary(
-        repo=repo,
-        flaky_tests=flaky_tests,
-    )

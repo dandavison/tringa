@@ -12,10 +12,10 @@ from tringa.utils import execute
 
 
 async def api_bytes(endpoint: str) -> bytes:
-    return await _gh("api", endpoint)
+    return await _gh("api", "--paginate", "--slurp", endpoint)
 
 
-async def api(endpoint: str) -> dict:
+async def api(endpoint: str) -> list[dict]:
     return json.loads((await api_bytes(endpoint)).decode())
 
 

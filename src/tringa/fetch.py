@@ -74,7 +74,8 @@ async def _list_remote_artifacts_for_repo(repo: str) -> list[Artifact]:
             "branch": artifact["workflow_run"]["head_branch"],
             "commit": artifact["workflow_run"]["head_sha"],
         }
-        for artifact in (await gh.api(f"/repos/{repo}/actions/artifacts"))["artifacts"]
+        for page in await gh.api(f"/repos/{repo}/actions/artifacts")
+        for artifact in page["artifacts"]
     ]
 
 

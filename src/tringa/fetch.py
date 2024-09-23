@@ -83,7 +83,7 @@ def _get_artifacts_not_in_db(
     db: DB,
     available_artifacts: list[Artifact],
 ) -> list[Artifact]:
-    # TODO: Avoid repreatedly downloading artifacts that do not contribute tests
+    # TODO: Avoid repeatedly downloading artifacts that do not contribute tests
     existing_artifacts = {
         s
         for (s,) in db.connection.execute(

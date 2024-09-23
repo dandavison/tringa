@@ -23,7 +23,7 @@ CREATE TABLE test (
     branch VARCHAR,
     run_id INT64,
     sha VARCHAR,
-    pr INT,
+    pr INT64,
     pr_title VARCHAR,
     file VARCHAR,
     suite VARCHAR,

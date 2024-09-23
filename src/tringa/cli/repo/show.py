@@ -4,6 +4,7 @@ from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
 from rich.text import Text
 
+from tringa.cli.reports.slowtests import SlowTests, get_slow_tests
 from tringa.db import DB
 from tringa.models import Serializable
 from tringa.queries import EmptyParams, Query
@@ -14,6 +15,7 @@ class RepoSummary(Serializable):
     repo: str
     prs: int
     flaky_tests: int
+    slow_tests: SlowTests
 
     def to_dict(self) -> dict:
         return {
@@ -38,7 +40,12 @@ class RepoSummary(Serializable):
                     "Flaky tests",
                     Text(str(self.flaky_tests), style="bold"),
                 )
+                yield (
+                    "Slow tests",
+                    self.slow_tests,
+                )
 
+            table = Table(show_header=False)
             table = Table(show_header=False)
             for row in rows():
                 table.add_row(*row)
@@ -61,9 +68,10 @@ def make_repo_summary(db: DB, repo: str) -> RepoSummary:
     """,
         ).fetchall(db, {})
     )
-
+    slow_tests = get_slow_tests(db, limit=10)
     return RepoSummary(
         repo=repo,
         prs=prs,
         flaky_tests=flaky_tests,
+        slow_tests=slow_tests,
     )

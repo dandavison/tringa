@@ -7,7 +7,7 @@ import tringa.tui.tui
 from tringa import cli, gh, queries, scoped_db
 from tringa.annotations import flaky as flaky
 from tringa.cli.output import tringa_print
-from tringa.cli.repo.flakes import get_flakes
+from tringa.cli.reports.flakes import get_flakes
 from tringa.cli.run.results import RunResults
 from tringa.db import DB
 from tringa.models import Run

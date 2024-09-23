@@ -9,8 +9,8 @@ import tringa.tui.tui
 from tringa import cli, gh, scoped_db
 from tringa.annotations import flaky as flaky
 from tringa.cli.output import tringa_print
-from tringa.cli.repo.flakes import get_flakes
-from tringa.cli.repo.summary import make_repo_summary
+from tringa.cli.reports.flakes import get_flakes
+from tringa.cli.repo.show import make_repo_summary
 from tringa.fetch import fetch_test_data
 
 app = typer.Typer(rich_markup_mode="rich")

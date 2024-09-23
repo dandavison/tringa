@@ -64,7 +64,6 @@ def _list_remote_artifacts(
 
 
 async def _list_remote_artifacts_for_repo(repo: str) -> list[Artifact]:
-    debug(f"Listing artifacts for {repo}")
     return [
         {
             "repo": repo,

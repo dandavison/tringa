@@ -81,7 +81,6 @@ class DB:
         yield duckdb.connect(str(path)) if path else duckdb.connect()
 
     def create_schema(self) -> None:
-        debug(f"{self}: creating schema")
         self.connection.execute(CREATE_SCHEMA_SQL)
         self.connection.execute(CREATE_INDEX_SQL)
 

@@ -53,8 +53,8 @@ async def repo(repo_identifier: Optional[str] = None) -> str:
     return json.loads(await _gh(*cmd))["nameWithOwner"]
 
 
-async def rerun(repo: str, run_id: str) -> None:
-    await _gh("run", "rerun", run_id, "--failed", "-R", repo)
+async def rerun(repo: str, run_id: int) -> None:
+    await _gh("run", "rerun", str(run_id), "--failed", "-R", repo)
 
 
 async def _gh(*args: str) -> bytes:

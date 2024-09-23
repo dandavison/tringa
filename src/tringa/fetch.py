@@ -21,7 +21,7 @@ class Artifact(TypedDict):
     name: str
     id: int
     url: str
-    run_id: str
+    run_id: int
     branch: str
     commit: str
 

@@ -21,7 +21,7 @@ CREATE TABLE test (
     artifact VARCHAR,
     repo VARCHAR,
     branch VARCHAR,
-    run_id VARCHAR,
+    run_id INT64,
     sha VARCHAR,
     pr INT,
     pr_title VARCHAR,

@@ -13,7 +13,7 @@ from tringa.msg import debug
 
 @contextmanager
 def connect(
-    dbconfig: DBConfig, repo: str, run_id: Optional[str] = None
+    dbconfig: DBConfig, repo: str, run_id: Optional[int] = None
 ) -> Iterator[DB]:
     debug(f"Creating scoped db for repo: {repo}, run_id: {run_id}")
     with dbconfig.connect() as db:

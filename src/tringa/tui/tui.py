@@ -149,7 +149,7 @@ if __name__ == "__main__":
         tringa.cli.run.show.Report(
             run=Run(
                 repo="repo",
-                id="id",
+                id=0,
                 time=datetime.now(),
                 pr=PR(
                     repo="repo",
@@ -166,7 +166,7 @@ if __name__ == "__main__":
                         branch="branch",
                         file="example.py",
                         name="test_example",
-                        run_id="run_id",
+                        run_id=0,
                         sha="sha",
                         pr=77,
                         pr_title="pr_title",

@@ -51,15 +51,6 @@ class Query[R, P: Mapping[str, Any]]:
         self.sql = dedent(self.sql).strip()
 
 
-failed_test_results = Query[TestResult, EmptyParams](
-    """
-    select * from test
-    where passed = false and skipped = false
-    order by file, flaky desc, duration desc;
-    """
-).fetchall
-
-
 class LastRunParams(TypedDict):
     repo: str
     branch: str

@@ -11,13 +11,13 @@ from textual.css.query import NoMatches
 from textual.widgets import Collapsible, ListItem, ListView, RichLog, Static
 from textual.widgets._collapsible import CollapsibleTitle
 
-from tringa.cli.reports import flakes
-from tringa.cli.run.show import Report
+import tringa.cli.run.show
+from tringa.cli.reports import failedtests, flakes
 from tringa.models import PR, Run, TestResult
 
 
 class RunResultsWidget(Static):
-    def __init__(self, run_results: Report):
+    def __init__(self, run_results: tringa.cli.run.show.Report):
         super().__init__()
         self.run_result = run_results
 
@@ -41,7 +41,7 @@ class RunResultsWidget(Static):
             )
             yield (
                 "Failed tests",
-                Text(str(len(rr.failed_tests)), style="bold"),
+                Text(str(len(rr.failed_tests.tests)), style="bold"),
             )
 
         table = Table(show_header=False)
@@ -70,7 +70,7 @@ class RunResultApp(App):
         Binding("left", "hide_test_output", "Hide test output"),
     ]
 
-    def __init__(self, run_result: Report):
+    def __init__(self, run_result: tringa.cli.run.show.Report):
         super().__init__()
         self.run_result = run_result
 
@@ -79,7 +79,7 @@ class RunResultApp(App):
 
         def per_file_results() -> Iterator[tuple[str, ListView]]:
             tests_by_file = defaultdict(list[TestResult])
-            for test in self.run_result.failed_tests:
+            for test in self.run_result.failed_tests.tests:
                 tests_by_file[test.file].append(test)
             for file, tests in sorted(tests_by_file.items()):
                 name = file.removesuffix(".xml")
@@ -139,14 +139,14 @@ class RunResultApp(App):
                         collapsible.collapsed = not visible
 
 
-def tui(run_result: Report) -> None:
+def tui(run_result: tringa.cli.run.show.Report) -> None:
     app = RunResultApp(run_result)
     app.run()
 
 
 if __name__ == "__main__":
     tui(
-        Report(
+        tringa.cli.run.show.Report(
             run=Run(
                 repo="repo",
                 id="id",
@@ -158,8 +158,8 @@ if __name__ == "__main__":
                     number=77,
                 ),
             ),
-            failed_tests=(
-                [
+            failed_tests=failedtests.Report(
+                tests=[
                     TestResult(
                         artifact_name="artifact_name",
                         repo="repo",

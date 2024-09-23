@@ -3,25 +3,23 @@ from dataclasses import dataclass
 import humanize
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
-from rich.text import Text
 
-from tringa import cli, queries
 from tringa.cli import reports
-from tringa.cli.reports import flakes
+from tringa.cli.reports import failedtests, flakes
 from tringa.db import DB
-from tringa.models import Run, TestResult
+from tringa.models import Run
 
 
 @dataclass
 class Report(reports.Report):
     run: Run
-    failed_tests: list[TestResult]
+    failed_tests: failedtests.Report
     flaky_tests: flakes.Report
 
     def to_dict(self) -> dict:
         return {
             "run": self.run.to_dict(),
-            "failed_tests": self.failed_tests,
+            "flaky_tests": self.flaky_tests.to_dict(),
         }
 
     def __rich_console__(
@@ -29,50 +27,34 @@ class Report(reports.Report):
     ) -> RenderResult:
         pr = self.run.pr
 
-        def make_header():
-            def rows():
-                yield (
-                    "Repo",
-                    f"[link=https://github.com/{self.run.repo}]{self.run.repo}[/link]",
-                )
-                yield ("PR", pr)
-                yield (
-                    "Last run",
-                    f"[link={self.run.url}]{humanize.naturaltime(self.run.time)}[/link]",
-                )
-                yield (
-                    "Failed tests",
-                    Text(str(len(self.failed_tests)), style="bold"),
-                )
-                yield (
-                    "Flaky tests",
-                    self.flaky_tests.summary(),
-                )
+        def rows():
+            yield (
+                "Repo",
+                f"[link=https://github.com/{self.run.repo}]{self.run.repo}[/link]",
+            )
+            yield ("PR", pr)
+            yield (
+                "Last run",
+                f"[link={self.run.url}]{humanize.naturaltime(self.run.time)}[/link]",
+            )
+            yield (
+                "Failed tests",
+                self.failed_tests.summary(),
+            )
+            yield (
+                "Flaky tests",
+                self.flaky_tests.summary(),
+            )
 
-            table = Table(show_header=False)
-            for row in rows():
-                table.add_row(*row)
-            return table
-
-        yield make_header()
-        if cli.options.verbose > 1:
-            yield from _make_failed_tests(self.failed_tests)
-
-
-def _make_failed_tests(failed_tests: list[TestResult]):
-    def rows():
-        for test in failed_tests:
-            yield (test.name, test.text)
-
-    for name, text in rows():
-        table = Table(name)
-        table.add_row(text)
+        table = Table(show_header=False)
+        for row in rows():
+            table.add_row(*row)
         yield table
 
 
 def make_report(db: DB, run: Run) -> Report:
     return Report(
         run=run,
-        failed_tests=queries.failed_test_results(db, {}),
+        failed_tests=failedtests.make_report(db),
         flaky_tests=flakes.make_report(db),
     )

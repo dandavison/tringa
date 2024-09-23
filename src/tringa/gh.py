@@ -5,10 +5,8 @@ https://cli.github.com/manual/
 
 import json
 import sys
-from subprocess import CalledProcessError
 from typing import Optional
 
-from tringa.exceptions import TringaException
 from tringa.models import PR
 from tringa.utils import execute
 
@@ -33,22 +31,13 @@ async def pr(pr_identifier: Optional[str] = None, repo: Optional[str] = None) ->
     if repo is not None:
         cmd.extend(["--repo", repo])
 
-    try:
-        data = json.loads(await _gh(*cmd))
-    except CalledProcessError as e:
-        if "no pull requests found for branch" in e.stderr.decode():
-            raise TringaException(
-                f"{e}\n{e.stderr.decode()}\nIt looks like you ran `tringa pr` on a branch without a pull request."
-            )
-        else:
-            raise
-    else:
-        return PR(
-            repo=f"{data['headRepositoryOwner']['login']}/{data['headRepository']['name']}",
-            number=data["number"],
-            title=data["title"],
-            branch=data["headRefName"],
-        )
+    data = json.loads(await _gh(*cmd))
+    return PR(
+        repo=f"{data['headRepositoryOwner']['login']}/{data['headRepository']['name']}",
+        number=data["number"],
+        title=data["title"],
+        branch=data["headRefName"],
+    )
 
 
 async def repo(repo_identifier: Optional[str] = None) -> str:

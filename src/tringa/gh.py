@@ -11,20 +11,12 @@ from tringa.models import PR
 from tringa.utils import execute
 
 
-async def api_bytes(endpoint: str, paginate: bool = False) -> bytes:
-    args = ["--paginate", "--slurp"] if paginate else []
-    return await _gh("api", *args, endpoint)
+async def api_bytes(endpoint: str) -> bytes:
+    return await _gh("api", endpoint)
 
 
-async def api(endpoint: str, paginate: bool = False) -> list[dict]:
-    s = (await api_bytes(endpoint, paginate=paginate)).decode()
-    p = json.loads(s)
-    if paginate:
-        assert isinstance(p, list)
-        return p
-    else:
-        assert isinstance(p, dict)
-        return [p]
+async def api(endpoint: str) -> dict:
+    return json.loads((await api_bytes(endpoint)).decode())
 
 
 async def pr(pr_identifier: Optional[str] = None, repo: Optional[str] = None) -> PR:

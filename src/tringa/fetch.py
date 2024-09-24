@@ -4,6 +4,7 @@ from datetime import datetime
 from fnmatch import fnmatch
 from io import BytesIO
 from itertools import chain, starmap
+from subprocess import CalledProcessError
 from typing import AsyncIterator, Iterator, Optional, TypedDict
 from zipfile import ZipFile
 
@@ -163,14 +164,23 @@ def _fetch_pr_info(rows: list[TestResult]) -> Iterator[TestResult]:
             branches,
             await asyncio.gather(*starmap(gh.pr, branches), return_exceptions=True),
         ):
-            if isinstance(pr, BaseException):
+            if isinstance(pr, CalledProcessError):
                 exc = pr
                 del pr
-                if "no pull requests found for branch" in str(exc).lower():
+                if (
+                    exc.stderr
+                    and "no pull requests found for branch"
+                    in exc.stderr.decode().lower()
+                ):
+                    # Ignore, with a warning.
                     if branch not in ["main", "master"]:
                         warn(f"Failed to get PR info for {repo}:{branch}: {exc}")
                 else:
                     raise exc
+            elif isinstance(pr, BaseException):
+                exc = pr
+                del pr
+                raise exc
             else:
                 prs[(repo, branch)] = pr
         return prs

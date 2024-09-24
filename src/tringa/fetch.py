@@ -50,6 +50,8 @@ def _list_remote_artifacts(
     repos: list[str],
     artifact_globs: list[str],
 ) -> list[Artifact]:
+    debug(f"Listing remote artifacts matching: {artifact_globs} for repos: {repos}")
+
     async def _list_artifacts():
         return list(
             filter(
@@ -97,8 +99,9 @@ def _download_zip_artifacts(
     artifacts: list[Artifact],
 ) -> Iterator[tuple[Artifact, bytes]]:
     debug(
-        f"Downloading {len(artifacts)} artifacts:",
-        ", ".join(a["name"] for a in artifacts),
+        f"Downloading {len(artifacts)} artifacts",
+        ", ".join(a["name"] for a in artifacts[:3]),
+        "..." if len(artifacts) > 3 else "",
     )
 
     async def fetch_zip(artifact: Artifact) -> tuple[Artifact, bytes]:

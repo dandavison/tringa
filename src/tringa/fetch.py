@@ -110,8 +110,17 @@ async def _download_zip_artifacts(
         )
         return artifact, zip_data
 
-    for coro in asyncio.as_completed(map(fetch_zip, artifacts)):
-        yield await coro
+    sema = asyncio.Semaphore(10)
+
+    async def tasks():
+        for task in map(fetch_zip, artifacts):
+            await sema.acquire()
+            yield task
+
+    for coro in asyncio.as_completed(async_to_sync_iterator(tasks())):
+        data = await coro
+        sema.release()
+        yield data
 
 
 async def _parse_xml_from_zip_artifacts(

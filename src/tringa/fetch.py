@@ -41,12 +41,13 @@ def _fetch_and_load_new_artifacts(
     repos: list[str],
 ):
     artifact_globs = cli.options.artifact_globs or ["*"]
-    remote_artifacts = _list_remote_artifacts(repos, artifact_globs)
-    artifacts_to_download = _get_artifacts_not_in_db(db, remote_artifacts)
-    downloaded_artifacts = _download_zip_artifacts(artifacts_to_download)
-    rows = _parse_xml_from_zip_artifacts(downloaded_artifacts)
-    rows = _fetch_pr_info(async_iterator_to_list(rows))
-    db.insert_rows(rows)
+    with cli.console.status("Fetching XML artifacts"):
+        remote_artifacts = _list_remote_artifacts(repos, artifact_globs)
+        artifacts_to_download = _get_artifacts_not_in_db(db, remote_artifacts)
+        downloaded_artifacts = _download_zip_artifacts(artifacts_to_download)
+        rows = _parse_xml_from_zip_artifacts(downloaded_artifacts)
+        rows = _fetch_pr_info(async_iterator_to_list(rows))
+        db.insert_rows(rows)
 
 
 def _list_remote_artifacts(

@@ -13,7 +13,7 @@ from tringa.db import DBConfig
 
 @dataclass
 class GlobalOptions:
-    artifact_globs: Optional[list[str]]
+    artifact_globs: list[str]
     db_config: DBConfig
     json: bool
     tui: bool
@@ -24,7 +24,7 @@ options: GlobalOptions
 
 
 def set_options(
-    artifact_globs: Optional[list[str]] = ["*junit*", "*xunit*", "*xml*"],
+    artifact_globs: list[str] = ["*junit*", "*xunit*", "*xml*"],
     db_path: Optional[Path] = None,
     json: bool = False,
     tui: bool = False,

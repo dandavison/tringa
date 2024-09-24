@@ -1,6 +1,7 @@
 import asyncio
 from typing import NoReturn, Optional
 
+import tringa.cli.reports.failed_tests
 import tringa.cli.reports.flaky_tests
 import tringa.cli.run.cli
 import tringa.cli.run.show
@@ -12,6 +13,11 @@ from tringa.cli.output import tringa_print
 from tringa.models import Run
 
 reports = tringa.cli.reports
+
+
+def failed(run: Run) -> None:
+    with scoped_db.connect(cli.options.db_config, repo=run.repo, run_id=run.id) as db:
+        tringa_print(reports.failed_tests.make_report(db))
 
 
 def flakes(run: Run) -> None:

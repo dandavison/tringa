@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from rich.console import Console, ConsoleOptions, RenderResult
+from rich.table import Table
 
 from tringa.cli import reports
 from tringa.db import DB
@@ -24,18 +25,25 @@ class Report(reports.Report):
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
         for test in self.tests:
-            yield test.name
+            table = Table(f"[bold red]{test.name}[/]")
+            table.add_row(test.text or "")
+            yield table
 
 
 @dataclass
-class Summary(Report):
+class Summary(reports.Report):
+    tests: list[TestResult]
+
+    def to_dict(self) -> dict:
+        return {
+            "tests": [t.name for t in self.tests],
+        }
+
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
-        if self.tests:
-            yield f"[bold red]{len(self.tests)}[/]"
-        else:
-            yield "[bold green]0[/]"
+        for test in self.tests:
+            yield f"[red]{test.name}[/]"
 
 
 def make_report(db: DB) -> Report:

@@ -28,6 +28,12 @@ def _get_pr(pr_option: PrOption) -> PR:
 
 
 @app.command()
+def failed(pr: PrOption = None) -> None:
+    """Summarize failed tests in the latest run for this PR."""
+    tringa.cli.run.cli.failed(_get_last_run(_get_pr(pr)))
+
+
+@app.command()
 def flakes(pr: PrOption = None) -> None:
     """Summarize flaky tests in the latest run for this PR."""
     tringa.cli.run.cli.flakes(_get_last_run(_get_pr(pr)))

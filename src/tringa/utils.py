@@ -3,11 +3,9 @@ import subprocess
 import sys
 from queue import Queue
 from threading import Thread
-from typing import AsyncIterator, Iterator, TypeVar
+from typing import AsyncIterator, Iterator
 
 from tringa.msg import debug
-
-T = TypeVar("T")
 
 
 class async_to_sync_iterator[T](Iterator[T]):
@@ -46,6 +44,6 @@ async def execute(cmd: list[str]) -> bytes:
     return stdout
 
 
-def tee(x: T) -> T:
+def tee[T](x: T) -> T:
     print(x, file=sys.stderr)
     return x

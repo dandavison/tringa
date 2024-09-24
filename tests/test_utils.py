@@ -1,4 +1,4 @@
-from tringa.utils import async_to_sync_iterator
+from tringa.utils import async_iterator_to_list
 
 
 def test_async_to_sync_iterator():
@@ -6,5 +6,4 @@ def test_async_to_sync_iterator():
         for i in range(7):
             yield i
 
-    sync_iter = async_to_sync_iterator(my_async_gen())
-    assert list(sync_iter) == list(range(7))
+    assert async_iterator_to_list(my_async_gen()) == list(range(7))

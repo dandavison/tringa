@@ -1,32 +1,16 @@
 import asyncio
 import subprocess
 import sys
-from queue import Queue
-from threading import Thread
-from typing import AsyncIterator, Iterator
+from typing import AsyncIterator
 
 from tringa.msg import debug
 
 
-class async_to_sync_iterator[T](Iterator[T]):
-    def __init__(self, async_iterator: AsyncIterator[T]) -> None:
-        self.queue = Queue()
-        self.sentinel = object()
-        self.thread = Thread(target=lambda: asyncio.run(self._produce(async_iterator)))
-        self.thread.start()
+def async_iterator_to_list[T](async_iterator: AsyncIterator[T]) -> list[T]:
+    async def collect() -> list[T]:
+        return [x async for x in async_iterator]
 
-    async def _produce(self, async_iterator: AsyncIterator[T]) -> None:
-        async for t in async_iterator:
-            self.queue.put(t)
-        self.queue.put(self.sentinel)
-
-    def __next__(self) -> T:
-        t = self.queue.get()
-        if t == self.sentinel:
-            self.thread.join()
-            raise StopIteration
-        else:
-            return t
+    return asyncio.run(collect())
 
 
 async def execute(cmd: list[str]) -> bytes:

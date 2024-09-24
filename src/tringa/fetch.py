@@ -13,7 +13,7 @@ from tringa import cli, gh
 from tringa.db import DB, TestResult
 from tringa.models import PR
 from tringa.msg import debug, warn
-from tringa.utils import async_to_sync_iterator
+from tringa.utils import async_iterator_to_list
 
 
 class Artifact(TypedDict):
@@ -42,7 +42,7 @@ def _fetch_and_load_new_artifacts(
     artifacts_to_download = _get_artifacts_not_in_db(db, remote_artifacts)
     downloaded_artifacts = _download_zip_artifacts(artifacts_to_download)
     rows = _parse_xml_from_zip_artifacts(downloaded_artifacts)
-    rows = _fetch_pr_info(list(async_to_sync_iterator(rows)))
+    rows = _fetch_pr_info(async_iterator_to_list(rows))
     db.insert_rows(rows)
 
 

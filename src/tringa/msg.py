@@ -22,12 +22,12 @@ log_level = LogLevel.from_env()
 
 def debug(*args) -> None:
     if log_level <= LogLevel.DEBUG:
-        print(*args, file=sys.stderr)
+        print(*args, file=sys.stderr, flush=True)
 
 
 def info(*args) -> None:
     if log_level <= LogLevel.INFO:
-        print(*args, file=sys.stderr)
+        print(*args, file=sys.stderr, flush=True)
 
 
 def warn(*args) -> None:

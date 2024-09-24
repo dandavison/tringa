@@ -28,6 +28,8 @@ class Artifact(TypedDict):
 
 
 def fetch_test_data(repo: str) -> None:
+    if cli.options.nofetch:
+        return
     with cli.options.db_config.connect() as db:
         # We fetch for the entire repo, even when the requested scope is `run`, in
         # order to collect information across branches used to identify flakes.

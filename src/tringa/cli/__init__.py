@@ -16,6 +16,7 @@ class GlobalOptions:
     artifact_globs: list[str]
     db_config: DBConfig
     json: bool
+    nofetch: bool
     tui: bool
     verbose: int
 
@@ -27,6 +28,7 @@ def set_options(
     artifact_globs: list[str] = ["*junit*", "*xunit*", "*xml*"],
     db_path: Optional[Path] = None,
     json: bool = False,
+    nofetch: bool = False,
     tui: bool = False,
     verbose: int = 1,
 ):
@@ -47,6 +49,7 @@ def set_options(
         artifact_globs=artifact_globs,
         db_config=DBConfig(path=db_path),
         json=json,
+        nofetch=nofetch,
         tui=tui,
         verbose=verbose,
     )

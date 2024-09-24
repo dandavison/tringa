@@ -5,8 +5,10 @@ https://cli.github.com/manual/
 
 import json
 import sys
+from subprocess import CalledProcessError
 from typing import Optional
 
+from tringa.exceptions import TringaException
 from tringa.models import PR
 from tringa.utils import execute
 
@@ -59,7 +61,15 @@ async def repo(repo_identifier: Optional[str] = None) -> str:
 
 
 async def rerun(repo: str, run_id: int) -> None:
-    await _gh("run", "rerun", str(run_id), "--failed", "-R", repo)
+    try:
+        await _gh("run", "rerun", str(run_id), "--failed", "-R", repo)
+    except CalledProcessError as exc:
+        if exc.stderr and "cannot be rerun" in exc.stderr.decode():
+            raise TringaException(
+                f"Run {run_id} cannot be rerun (are you sure it's finished?)"
+            ) from exc
+        else:
+            raise
 
 
 async def _gh(*args: str) -> bytes:

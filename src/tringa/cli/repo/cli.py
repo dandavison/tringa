@@ -1,4 +1,5 @@
 import asyncio
+import re
 from typing import Annotated, NoReturn, Optional
 
 import typer
@@ -11,6 +12,7 @@ from tringa.cli.output import tringa_print
 from tringa.cli.repo import show
 from tringa.cli.reports import flaky_tests
 from tringa.fetch import fetch_test_data
+from tringa.utils import execute  # Import the execute function
 
 app = typer.Typer(rich_markup_mode="rich")
 
@@ -23,14 +25,6 @@ RepoOption = Annotated[
         ),
     ),
 ]
-
-
-def _get_repo(repo: RepoOption) -> str:
-    if repo is None:
-        # TODO: do without a network call; e.g. use `git remote`.
-        repo = asyncio.run(gh.repo())
-    fetch_test_data(repo)
-    return repo
 
 
 @app.command("flakes")
@@ -87,3 +81,41 @@ def sql(
     repo = _get_repo(repo)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
         tringa_print(db.connection.sql(query))
+
+
+def _get_repo(repo: RepoOption) -> str:
+    repo = _validate_repo_arg(repo) if repo else _infer_repo()
+    # TODO: this isn't the right place for this
+    fetch_test_data(repo)
+    return repo
+
+
+def _infer_repo() -> str:
+    return _infer_repo_from_local_git_repo() or asyncio.run(gh.repo())
+
+
+def _infer_repo_from_local_git_repo() -> Optional[str]:
+    try:
+        url = asyncio.run(execute(["git", "remote", "get-url", "origin"]))
+        return _validate_repo_arg(url.decode().strip())
+    except Exception:
+        return None
+
+
+def _validate_repo_arg(repo: str) -> str:
+    _repo = r"([^/.]+/[^/.]+)"
+    repo = repo.strip()
+    # import pdb
+
+    # pdb.set_trace()
+    for regex in [
+        rf"^{_repo}$",
+        rf"^https://github\.com/{_repo}$",
+        rf"^https://github\.com/{_repo}/",
+        rf"^git@github\.com:{_repo}(\.git)?$",
+    ]:
+        if match := re.match(regex, repo):
+            return match.group(1)
+    raise typer.BadParameter(
+        f"Supply repo in `owner/repo` format, or as a git or github URL.Invalid repo: {repo}."
+    )

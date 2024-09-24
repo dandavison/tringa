@@ -20,7 +20,7 @@ RepoOption = Annotated[
     Optional[str],
     typer.Option(
         help=(
-            "GitHub repository to target, e.g. `--repo dandavison/tringa`. "
+            "GitHub repository to target, e.g. `dandavison/tringa`. "
             "Defaults to the current repository."
         ),
     ),

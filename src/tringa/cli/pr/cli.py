@@ -62,6 +62,7 @@ def repl(
 @app.command()
 def rerun(pr: PrOption = None) -> None:
     """Rerun failed tests in the latest run for this PR."""
+    tringa.cli.options.nofetch = True
     tringa.cli.run.cli.rerun(_get_last_run(_get_pr(pr)))
 
 

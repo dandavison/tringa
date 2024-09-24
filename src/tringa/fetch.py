@@ -79,8 +79,9 @@ async def _list_remote_artifacts_for_repo(repo: str) -> list[Artifact]:
             "branch": artifact["workflow_run"]["head_branch"],
             "commit": artifact["workflow_run"]["head_sha"],
         }
-        for page in await gh.api_all_pages(f"/repos/{repo}/actions/artifacts")
+        for page in (await gh.api_all_pages(f"/repos/{repo}/actions/artifacts"))
         for artifact in page["artifacts"]
+        if not artifact["expired"]
     ]
 
 

@@ -42,7 +42,7 @@ def _fetch_and_load_new_artifacts(
     artifacts_to_download = _get_artifacts_not_in_db(db, remote_artifacts)
     downloaded_artifacts = _download_zip_artifacts(artifacts_to_download)
     rows = _parse_xml_from_zip_artifacts(downloaded_artifacts)
-    rows = _fetch_pr_info(list(rows))
+    rows = _fetch_pr_info(list(async_to_sync_iterator(rows)))
     db.insert_rows(rows)
 
 
@@ -94,9 +94,9 @@ def _get_artifacts_not_in_db(
     return [a for a in available_artifacts if a["name"] not in existing_artifacts]
 
 
-def _download_zip_artifacts(
+async def _download_zip_artifacts(
     artifacts: list[Artifact],
-) -> Iterator[tuple[Artifact, bytes]]:
+) -> AsyncIterator[tuple[Artifact, bytes]]:
     debug(
         f"Downloading {len(artifacts)} artifacts",
         ", ".join(a["name"] for a in artifacts[:3]),
@@ -110,21 +110,19 @@ def _download_zip_artifacts(
         )
         return artifact, zip_data
 
-    async def fetch_zips() -> AsyncIterator[tuple[Artifact, bytes]]:
-        for coro in asyncio.as_completed(map(fetch_zip, artifacts)):
-            yield await coro
-
-    return async_to_sync_iterator(fetch_zips())
+    for coro in asyncio.as_completed(map(fetch_zip, artifacts)):
+        yield await coro
 
 
-def _parse_xml_from_zip_artifacts(
-    artifacts: Iterator[tuple[Artifact, bytes]],
-) -> Iterator[TestResult]:
-    for artifact, zip_bytes in artifacts:
+async def _parse_xml_from_zip_artifacts(
+    artifacts: AsyncIterator[tuple[Artifact, bytes]],
+) -> AsyncIterator[TestResult]:
+    async for artifact, zip_bytes in artifacts:
         with ZipFile(BytesIO(zip_bytes)) as zip_file:
             for file_name in zip_file.namelist():
                 if file_name.endswith(".xml"):
-                    yield from _parse_xml_file(file_name, zip_file, artifact)
+                    for tr in _parse_xml_file(file_name, zip_file, artifact):
+                        yield tr
 
 
 def _fetch_pr_info(rows: list[TestResult]) -> Iterator[TestResult]:

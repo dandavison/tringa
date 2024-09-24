@@ -21,7 +21,7 @@ PrOption = Annotated[
 ]
 
 
-def _get_pr(pr_option: PrOption) -> PR:
+def _get_pr(pr_option: PrOption, fetch=True) -> PR:
     pr = asyncio.run(gh.pr(pr_option))
     fetch_test_data(pr.repo)
     return pr
@@ -62,7 +62,7 @@ def repl(
 @app.command()
 def rerun(pr: PrOption = None) -> None:
     """Rerun failed tests in the latest run for this PR."""
-    tringa.cli.run.cli.rerun(_get_last_run(_get_pr(pr)))
+    tringa.cli.run.cli.rerun(_get_last_run(_get_pr(pr, fetch=False)))
 
 
 @app.command()

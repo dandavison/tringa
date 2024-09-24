@@ -4,7 +4,7 @@ from datetime import datetime
 from fnmatch import fnmatch
 from io import BytesIO
 from itertools import chain, starmap
-from typing import AsyncIterator, Iterator, TypedDict
+from typing import AsyncIterator, Iterator, Optional, TypedDict
 from zipfile import ZipFile
 
 import junitparser.xunit2 as jup
@@ -106,18 +106,42 @@ async def _download_zip_artifacts(
 
     semaphore = asyncio.Semaphore(10)
 
-    async def fetch_zip(artifact: Artifact) -> tuple[Artifact, bytes]:
+    async def fetch_zip(artifact: Artifact) -> tuple[Artifact, Optional[bytes]]:
         async with semaphore:
             debug(
-                f"Downloading zip artifact: {artifact['name']} from: {artifact['repo']}"
+                f"Acquired semaphore for artifact: {artifact['name']} from: {artifact['repo']}"
             )
-            zip_data = await gh.api_bytes(
-                f"/repos/{artifact['repo']}/actions/artifacts/{artifact['id']}/zip"
-            )
-            return artifact, zip_data
+            try:
+                zip_data = await asyncio.wait_for(
+                    gh.api_bytes(
+                        f"/repos/{artifact['repo']}/actions/artifacts/{artifact['id']}/zip"
+                    ),
+                    timeout=10.0,
+                )
+                debug(
+                    f"Successfully downloaded artifact: {artifact['name']} from: {artifact['repo']}"
+                )
+                return artifact, zip_data
+            except asyncio.TimeoutError:
+                warn(
+                    f"Timeout while downloading artifact {artifact['name']} from {artifact['repo']}"
+                )
+                return artifact, None
+            except Exception as e:
+                warn(
+                    f"Failed to download artifact {artifact['name']} from {artifact['repo']}: {e}"
+                )
+                return artifact, None
 
-    for coro in asyncio.as_completed(map(fetch_zip, artifacts)):
-        yield await coro
+    # Schedule the tasks
+    tasks = [fetch_zip(artifact) for artifact in artifacts]
+
+    # Process tasks as they complete
+    for coro in asyncio.as_completed(tasks):
+        artifact, zip_data = await coro
+        if zip_data is not None:
+            debug(f"Downloaded artifact: {artifact['name']} from: {artifact['repo']}")
+            yield artifact, zip_data
 
 
 async def _parse_xml_from_zip_artifacts(

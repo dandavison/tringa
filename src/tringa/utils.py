@@ -12,8 +12,8 @@ class async_to_sync_iterator[T](Iterator[T]):
     def __init__(self, async_iterator: AsyncIterator[T]) -> None:
         self.queue = Queue()
         self.sentinel = object()
-        # TODO: terminate thread cleanly on error
-        Thread(target=lambda: asyncio.run(self._produce(async_iterator))).start()
+        self.thread = Thread(target=lambda: asyncio.run(self._produce(async_iterator)))
+        self.thread.start()
 
     async def _produce(self, async_iterator: AsyncIterator[T]) -> None:
         async for t in async_iterator:
@@ -23,6 +23,7 @@ class async_to_sync_iterator[T](Iterator[T]):
     def __next__(self) -> T:
         t = self.queue.get()
         if t == self.sentinel:
+            self.thread.join()
             raise StopIteration
         else:
             return t

@@ -104,12 +104,17 @@ async def _download_zip_artifacts(
         "..." if len(artifacts) > 3 else "",
     )
 
+    semaphore = asyncio.Semaphore(10)
+
     async def fetch_zip(artifact: Artifact) -> tuple[Artifact, bytes]:
-        debug(f"Downloading zip artifact: {artifact['name']} from: {artifact['repo']}")
-        zip_data = await gh.api_bytes(
-            f"/repos/{artifact['repo']}/actions/artifacts/{artifact['id']}/zip"
-        )
-        return artifact, zip_data
+        async with semaphore:
+            debug(
+                f"Downloading zip artifact: {artifact['name']} from: {artifact['repo']}"
+            )
+            zip_data = await gh.api_bytes(
+                f"/repos/{artifact['repo']}/actions/artifacts/{artifact['id']}/zip"
+            )
+            return artifact, zip_data
 
     for coro in asyncio.as_completed(map(fetch_zip, artifacts)):
         yield await coro

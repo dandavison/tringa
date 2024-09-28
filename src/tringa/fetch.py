@@ -47,21 +47,27 @@ async def _fetch_and_parse_artifacts_for_repo(repo: str) -> AsyncIterator[TestRe
     # Fetch all PRs since the specified date
     prs = await gh.prs(repo, since=cli.options.since)
 
-    # Gather runs for all PR branches concurrently
-    runs_tasks = [gh.runs(repo, branch=pr.branch) for pr in prs]
-    all_runs = []
-    for runs in await asyncio.gather(*runs_tasks):
-        all_runs.extend(runs)
+    # Create tasks to fetch runs and process them for each PR
+    tasks = [asyncio.create_task(_fetch_runs_and_process(pr)) for pr in prs]
+
+    # Process results as they become available
+    for coro in asyncio.as_completed(tasks):
+        async for test_result in await coro:
+            yield test_result
+
+
+async def _fetch_runs_and_process(pr: gh.PR) -> AsyncIterator[TestResult]:
+    # Fetch runs for the PR's branch
+    runs = await gh.runs(pr.repo, branch=pr.branch)
 
     # Create tasks to download and parse artifacts for each run
-    tasks = [
-        asyncio.create_task(_download_and_parse_artifacts_for_run(run))
-        for run in all_runs
+    run_tasks = [
+        asyncio.create_task(_download_and_parse_artifacts_for_run(run)) for run in runs
     ]
 
-    # Process tasks as they complete
-    for task in asyncio.as_completed(tasks):
-        results = await task  # List[TestResult]
+    # Process run tasks as they complete
+    for run_coro in asyncio.as_completed(run_tasks):
+        results = await run_coro  # List[TestResult]
         for test_result in results:
             yield test_result
 

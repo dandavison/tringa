@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import timedelta
 from pathlib import Path
 from typing import Optional
 
@@ -14,6 +15,7 @@ from tringa.db import DBConfig
 @dataclass
 class GlobalOptions:
     artifact_globs: list[str]
+    since: timedelta
     db_config: DBConfig
     json: bool
     nofetch: bool
@@ -26,6 +28,7 @@ options: GlobalOptions
 
 def set_options(
     artifact_globs: list[str] = ["*junit*", "*xunit*", "*xml*"],
+    since: timedelta = timedelta(days=90),
     db_path: Optional[Path] = None,
     json: bool = False,
     nofetch: bool = False,
@@ -47,6 +50,7 @@ def set_options(
     global options
     options = GlobalOptions(
         artifact_globs=artifact_globs,
+        since=since,
         db_config=DBConfig(path=db_path),
         json=json,
         nofetch=nofetch,

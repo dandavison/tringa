@@ -15,7 +15,7 @@ app = typer.Typer(rich_markup_mode="rich")
 
 PrOption = Annotated[
     Optional[str],
-    typer.Option(
+    typer.Argument(
         help="""PR number, PR URL, branch name, or any other PR identifier accepted by the `gh` GitHub CLI tool (https://cli.github.com/manual/)."""
     ),
 ]

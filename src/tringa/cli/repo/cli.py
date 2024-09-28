@@ -18,7 +18,7 @@ app = typer.Typer(rich_markup_mode="rich")
 
 RepoOption = Annotated[
     Optional[str],
-    typer.Option(
+    typer.Argument(
         help=(
             "GitHub repository to target, e.g. `dandavison/tringa`. "
             "Defaults to the current repository."

@@ -1,7 +1,7 @@
 # Scope = repo
 
-Options:
-`--repo $repoid`
+Optional arguments:
+`$repoid`
 
 - See which tests are flaky: `tringa repo show`
 - See tests are slow := (slow test summary for latest run): `tringa repo show`
@@ -11,8 +11,8 @@ Options:
 # scope = PR
 This is just scope = (latest run of PR)
 
-Options:
-`--pr $prid`
+Optional arguments:
+`$prid`
 
 - summary `tringa pr show`
     For each build:

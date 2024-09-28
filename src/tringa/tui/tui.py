@@ -37,7 +37,7 @@ class RunResultsWidget(Static):
                 )
             yield (
                 "Last run",
-                f"[@click=app.open_url('{rr.run.url}')]{humanize.naturaltime(rr.run.time)}[/]",
+                f"[@click=app.open_url('{rr.run.url}')]{humanize.naturaltime(rr.run.started_at)}[/]",
             )
             yield (
                 "Failed tests",
@@ -150,13 +150,15 @@ if __name__ == "__main__":
             run=Run(
                 repo="repo",
                 id=0,
-                time=datetime.now(),
+                started_at=datetime.now(),
                 pr=PR(
                     repo="repo",
                     title="title",
                     branch="branch",
                     number=77,
                 ),
+                branch="branch",
+                sha="sha",
             ),
             failed_tests=failed_tests.Report(
                 tests=[

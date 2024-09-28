@@ -27,7 +27,9 @@ class PR:
 class Run(Serializable):
     repo: str
     id: int
-    time: datetime
+    started_at: datetime
+    branch: str
+    sha: str
     pr: Optional[PR]
 
     @property
@@ -38,7 +40,7 @@ class Run(Serializable):
         return {
             "repo": self.repo,
             "id": self.id,
-            "time": self.time.isoformat(),
+            "started_at": self.started_at.isoformat(),
             "pr": self.pr.__dict__ if self.pr is not None else None,
         }
 

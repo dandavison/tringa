@@ -35,7 +35,7 @@ class Report(reports.Report):
             yield ("PR", pr)
             yield (
                 "Last run",
-                f"[link={self.run.url}]{humanize.naturaltime(self.run.time)}[/link]",
+                f"[link={self.run.url}]{humanize.naturaltime(self.run.started_at)}[/link]",
             )
             yield (
                 "Failed tests",

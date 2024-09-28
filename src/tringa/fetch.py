@@ -1,16 +1,18 @@
 import asyncio
+import concurrent.futures
 import tempfile
 from collections import namedtuple
 from datetime import datetime
+from itertools import chain
 from pathlib import Path
 from typing import AsyncIterator, Iterator, List, TypedDict
 
 import junitparser.xunit2 as jup
 
 from tringa import cli, gh
-from tringa.db import DB, TestResult
-from tringa.models import Run
-from tringa.msg import debug
+from tringa.db import TestResult
+from tringa.models import PR, Run
+from tringa.msg import debug, warn
 from tringa.utils import async_iterator_to_list
 
 
@@ -30,84 +32,84 @@ def fetch_test_data(repo: str) -> None:
     with cli.options.db_config.connect() as db:
         # We fetch for the entire repo, even when the requested scope is `run`, in
         # order to collect information across branches used to identify flakes.
-        _fetch_and_load_new_artifacts(db, repo)
+        with cli.console.status("Fetching XML artifacts"):
+            rows = Fetcher().fetch_and_load_new_artifacts_for_repo(repo)
+            db.insert_rows(rows)
 
 
-def _fetch_and_load_new_artifacts(
-    db: DB,
-    repo: str,
-):
-    artifact_globs = cli.options.artifact_globs or ["*"]
-    with cli.console.status("Fetching XML artifacts"):
-        rows = async_iterator_to_list(_fetch_and_parse_artifacts_for_repo(repo))
-        db.insert_rows(rows)
+class Fetcher:
+    def __init__(self):
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self.artifact_globs = cli.options.artifact_globs
 
+    def fetch_and_load_new_artifacts_for_repo(
+        self,
+        repo: str,
+    ) -> list[TestResult]:
+        return async_iterator_to_list(self._fetch_and_parse_artifacts_for_repo(repo))
 
-async def _fetch_and_parse_artifacts_for_repo(repo: str) -> AsyncIterator[TestResult]:
-    # Fetch all PRs since the specified date
-    prs = await gh.prs(repo, since=cli.options.since)
+    async def _fetch_and_parse_artifacts_for_repo(
+        self,
+        repo: str,
+    ) -> AsyncIterator[TestResult]:
+        prs = await gh.prs(repo, since=cli.options.since)
+        for test_results_fut in asyncio.as_completed(
+            self._fetch_and_parse_artifacts_for_pr(pr) for pr in prs
+        ):
+            for test_result in await test_results_fut:
+                yield test_result
 
-    # Create tasks to fetch runs and process them for each PR
-    tasks = [asyncio.create_task(_fetch_runs_and_process(pr)) for pr in prs]
-
-    # Process results as they become available
-    for coro in asyncio.as_completed(tasks):
-        async for test_result in await coro:
-            yield test_result
-
-
-async def _fetch_runs_and_process(pr: gh.PR) -> AsyncIterator[TestResult]:
-    # Fetch runs for the PR's branch
-    runs = await gh.runs(pr.repo, branch=pr.branch)
-
-    # Create tasks to download and parse artifacts for each run
-    run_tasks = [
-        asyncio.create_task(_download_and_parse_artifacts_for_run(run)) for run in runs
-    ]
-
-    # Process run tasks as they complete
-    for run_coro in asyncio.as_completed(run_tasks):
-        results = await run_coro  # List[TestResult]
-        for test_result in results:
-            yield test_result
-
-
-async def _download_and_parse_artifacts_for_run(run: Run) -> List[TestResult]:
-    with tempfile.TemporaryDirectory() as dir:
-        dir = Path(dir)
-        # Download artifacts for the run
-        await gh.run_download(run, dir)
-
-        # Parse artifacts in a separate thread to avoid blocking the event loop
-        loop = asyncio.get_event_loop()
-        results = await loop.run_in_executor(
-            None, _parse_artifacts_for_run_sync, dir, run
-        )
-        return results
-
-
-def _parse_artifacts_for_run_sync(dir: Path, run: Run) -> List[TestResult]:
-    return list(_parse_artifacts_for_run(dir, run))
-
-
-def _parse_artifacts_for_run(dir: Path, run: Run) -> Iterator[TestResult]:
-    for file in dir.iterdir():
-        if file.is_file() and file.suffix == ".xml":
-            # TODO: is Artifact needed?
-            artifact = Artifact(
-                repo=run.repo,
-                name=file.name,
-                id=run.id,
-                url=run.url,
-                run_id=run.id,
-                branch=run.branch,
-                commit=run.sha,
+    async def _fetch_and_parse_artifacts_for_pr(self, pr: gh.PR) -> list[TestResult]:
+        runs = await gh.runs_via_workflows(pr.repo, pr.branch)
+        return list(
+            chain.from_iterable(
+                [
+                    (await rows)
+                    for rows in asyncio.as_completed(
+                        self._fetch_and_parse_artifacts_for_run(run, pr) for run in runs
+                    )
+                ]
             )
-            for tr in _parse_xml_file(file, artifact):
-                yield tr
+        )
+
+    async def _fetch_and_parse_artifacts_for_run(
+        self, run: Run, pr: PR
+    ) -> List[TestResult]:
+        with tempfile.TemporaryDirectory() as dir:
+            dir = Path(dir)
+            try:
+                await gh.run_download(run, dir, patterns=self.artifact_globs)
+            except gh.CalledProcessError as exc:
+                if exc.stderr and "no valid artifacts" in exc.stderr.decode():
+                    warn(f"Run {run.id} {run.pr} has no valid artifacts")
+                    return []
+                else:
+                    raise exc
+            return await asyncio.get_event_loop().run_in_executor(
+                self.executor, _parse_artifacts_for_run, run, dir, pr
+            )
 
 
-def _parse_xml_file(file: Path, artifact: Artifact) -> Iterator[TestResult]:
+def _parse_artifacts_for_run(run: Run, dir: Path, pr: PR) -> List[TestResult]:
+    def test_results() -> Iterator[TestResult]:
+        for file in dir.rglob("*.xml"):
+            if file.is_file():
+                # TODO: is Artifact needed?
+                artifact = Artifact(
+                    repo=run.repo,
+                    name=file.name,
+                    id=run.id,
+                    url=run.url,
+                    run_id=run.id,
+                    branch=run.branch,
+                    commit=run.sha,
+                )
+                yield from _parse_xml_file(file, artifact, pr)
+
+    return list(test_results())
+
+
+def _parse_xml_file(file: Path, artifact: Artifact, pr: PR) -> Iterator[TestResult]:
     empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)
     debug(f"Parsing {file}")
     for test_suite in jup.JUnitXml.fromfile(str(file)):
@@ -121,8 +123,8 @@ def _parse_xml_file(file: Path, artifact: Artifact) -> Iterator[TestResult]:
                     run_id=artifact["run_id"],
                     branch=artifact["branch"],
                     sha=artifact["commit"],
-                    pr=0,
-                    pr_title="",
+                    pr=pr.number,
+                    pr_title=pr.title,
                     file=file.name,
                     suite=test_suite.name,
                     suite_time=datetime.fromisoformat(test_suite.timestamp),

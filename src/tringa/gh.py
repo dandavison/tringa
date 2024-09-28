@@ -3,12 +3,14 @@ A Python wrapper for the GitHub CLI.
 https://cli.github.com/manual/
 """
 
+import asyncio
 import json
 import sys
 from datetime import datetime, timedelta
+from itertools import chain
 from pathlib import Path
 from subprocess import CalledProcessError
-from typing import Optional
+from typing import Optional, TypedDict
 
 from tringa.exceptions import TringaException
 from tringa.models import PR, Run
@@ -85,7 +87,23 @@ async def repo(repo_identifier: Optional[str] = None) -> str:
 # Run
 
 
-async def runs(repo: str, branch: str) -> list[Run]:
+class _WorkflowData(TypedDict):
+    id: int
+    name: str
+
+
+async def runs_via_workflows(repo: str, branch: str) -> list[Run]:
+    # workaround for https://github.com/cli/cli/issues/9228
+    cmd = ["workflow", "list", "--repo", repo, "--json", "id,name"]
+    workflows: list[_WorkflowData] = json.loads(await _gh(*cmd))
+    return list(
+        chain.from_iterable(
+            await asyncio.gather(*[runs(repo, branch, w["id"]) for w in workflows])
+        )
+    )
+
+
+async def runs(repo: str, branch: str, workflow_id: Optional[int] = None) -> list[Run]:
     cmd = [
         "run",
         "list",
@@ -96,6 +114,8 @@ async def runs(repo: str, branch: str) -> list[Run]:
         "--json",
         "databaseId,headBranch,headSha,startedAt",
     ]
+    if workflow_id is not None:
+        cmd.extend(["--workflow", str(workflow_id)])
     return [
         Run(
             id=data["databaseId"],
@@ -109,8 +129,13 @@ async def runs(repo: str, branch: str) -> list[Run]:
     ]
 
 
-async def run_download(run: Run, dir: Path) -> None:
-    await _gh("run", "download", str(run.id), "--repo", run.repo, "--dir", str(dir))
+async def run_download(
+    run: Run, dir: Path, patterns: Optional[list[str]] = None
+) -> None:
+    args = ["run", "download", str(run.id), "--repo", run.repo, "--dir", str(dir)]
+    for p in patterns or []:
+        args.extend(["--pattern", p])
+    await _gh(*args)
 
 
 async def rerun(repo: str, run_id: int) -> None:

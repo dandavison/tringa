@@ -136,7 +136,7 @@ def make_report(db: DB) -> Report:
         ) in name_to_branch_to_file_to_latest_failure.items():
             prs_with_failures = []
             for (
-                _branch,
+                branch,
                 file_to_latest_failure,
             ) in branch_to_file_to_latest_failure.items():
                 failed_builds = [
@@ -145,8 +145,10 @@ def make_report(db: DB) -> Report:
                         Run(
                             repo=tr.repo,
                             id=tr.run_id,
+                            branch=branch,
+                            sha=tr.sha,
                             pr=tr.make_pr(),
-                            time=tr.suite_time,
+                            started_at=tr.suite_time,
                         ),
                     )
                     for file, tr in file_to_latest_failure.items()

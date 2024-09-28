@@ -18,8 +18,8 @@ from tringa.msg import debug
 
 CREATE_SCHEMA_SQL = """
 CREATE TABLE test (
-    artifact VARCHAR,
     repo VARCHAR,
+    artifact VARCHAR,
     branch VARCHAR,
     run_id INT64,
     sha VARCHAR,
@@ -29,44 +29,26 @@ CREATE TABLE test (
     suite VARCHAR,
     suite_time TIMESTAMP,
     suite_duration FLOAT,
-    name VARCHAR,
     classname VARCHAR,
+    name VARCHAR,
     duration FLOAT,
     passed BOOLEAN,
     skipped BOOLEAN,
     flaky BOOLEAN,
     message VARCHAR,
-    text VARCHAR
+    text VARCHAR,
+
+    -- A run may have multiple run attempts. The artifact name typically includes
+    -- the run attempt number, in order to avoid artifact name conflicts. However,
+    -- GitHub does not expose the run attempt number in the metadata associated with
+    -- an artifact, and we follow suite: i.e. we demand uniqueness on the following
+    -- tuple, which means that multiple artifacts for the same run may not coexist
+    -- in the table.
+    PRIMARY KEY (repo, run_id, file, suite, classname, name),
+
+    -- The following should be true also.
+    -- UNIQUE (repo, artifact, file, suite, classname, name)
 );
-"""
-
-CREATE_INDEX_SQL = """
-CREATE INDEX idx_artifact ON test(artifact)
-"""
-
-INSERT_ROWS_SQL = """
-INSERT INTO test (
-    artifact,
-    repo,
-    branch,
-    run_id,
-    sha,
-    pr,
-    pr_title,
-    file,
-    suite,
-    suite_time,
-    suite_duration,
-    name,
-    classname,
-    duration,
-    passed,
-    skipped,
-    flaky,
-    message,
-    text
-)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 """
 
 
@@ -82,17 +64,26 @@ class DB:
 
     def create_schema(self) -> None:
         self.connection.execute(CREATE_SCHEMA_SQL)
-        self.connection.execute(CREATE_INDEX_SQL)
 
     def insert_rows(self, rows: Iterable[TestResult]) -> None:
         # Inserting columns from a dataframe is more efficient than inserting
         # rows from a SQL INSERT statement.
         n_rows = str(len(rows)) if isinstance(rows, Sequence) else "<iterator>"
+
         df = pd.DataFrame(rows)
         if df.empty:
             return
         debug(f"Inserting {n_rows} rows into {self}")
-        self.connection.execute("insert into test select * from df")
+        # Sort by time so that rows from later run attempts (that match on the
+        # uniqueness constraints) replace those from earlier run attempts.
+        self.connection.execute(
+            """
+            INSERT OR REPLACE INTO test
+            SELECT DISTINCT ON (repo, run_id, file, suite, classname, name) *
+            FROM df
+            ORDER BY repo, run_id, file, suite, classname, name, suite_time DESC
+            """
+        )
 
     def fetchone(self, sql: str) -> Any:
         rows = self.connection.execute(sql).fetchall()

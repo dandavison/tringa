@@ -163,8 +163,8 @@ if __name__ == "__main__":
             failed_tests=failed_tests.Report(
                 tests=[
                     TestResult(
-                        artifact="artifact",
                         repo="repo",
+                        artifact="artifact",
                         branch="branch",
                         file="example.py",
                         name="test_example",

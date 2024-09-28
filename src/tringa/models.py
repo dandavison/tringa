@@ -52,10 +52,9 @@ class Run(Serializable):
 
 
 class TestResult(NamedTuple):
-    artifact: str
-
     # run-level fields
     repo: str
+    artifact: str
     branch: str
     run_id: int
     sha: str
@@ -69,8 +68,8 @@ class TestResult(NamedTuple):
     suite_duration: float
 
     # test-level fields
-    name: str  # Name of the test function
     classname: str  # Name of class or module containing the test function
+    name: str  # Name of the test function
     duration: float
     passed: bool
     skipped: bool
@@ -79,7 +78,7 @@ class TestResult(NamedTuple):
     text: Optional[str]  # Stack trace or code context of failure
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}({self.artifact}, {self.repo}, {self.branch}, {self.run_id}, {self.file}, {self.name})"
+        return f"{self.__class__.__name__}({self.repo}, {self.artifact}, {self.branch}, {self.run_id}, {self.file}, {self.name})"
 
     def __repr__(self) -> str:
         return self.__str__()

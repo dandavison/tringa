@@ -1,19 +1,18 @@
 import asyncio
+import concurrent.futures
+import tempfile
 from collections import namedtuple
 from datetime import datetime
-from fnmatch import fnmatch
-from io import BytesIO
-from itertools import chain, starmap
-from subprocess import CalledProcessError
-from typing import AsyncIterator, Iterator, Optional, TypedDict
-from zipfile import ZipFile
+from itertools import chain
+from pathlib import Path
+from typing import AsyncIterator, Iterator, List, TypedDict
 
 import junitparser.xunit2 as jup
 
 from tringa import cli, gh
-from tringa.db import DB, TestResult
-from tringa.models import PR
-from tringa.msg import debug, warn
+from tringa.db import TestResult
+from tringa.models import PR, Run
+from tringa.msg import debug
 from tringa.utils import async_iterator_to_list
 
 
@@ -27,203 +26,112 @@ class Artifact(TypedDict):
     commit: str
 
 
-def fetch_test_data(repo: str) -> None:
-    if cli.options.nofetch:
-        return
+def fetch_data_for_repo(repo: str) -> None:
     with cli.options.db_config.connect() as db:
-        # We fetch for the entire repo, even when the requested scope is `run`, in
-        # order to collect information across branches used to identify flakes.
-        _fetch_and_load_new_artifacts(db, [repo])
+        with cli.console.status("Fetching XML artifacts"):
+            rows = async_iterator_to_list(
+                Fetcher()._fetch_and_parse_artifacts_for_repo(repo)
+            )
+            db.insert_rows(rows)
 
 
-def _fetch_and_load_new_artifacts(
-    db: DB,
-    repos: list[str],
-):
-    artifact_globs = cli.options.artifact_globs or ["*"]
-    with cli.console.status("Fetching XML artifacts"):
-        remote_artifacts = _list_remote_artifacts(repos, artifact_globs)
-        artifacts_to_download = _get_artifacts_not_in_db(db, remote_artifacts)
-        downloaded_artifacts = _download_zip_artifacts(artifacts_to_download)
-        rows = _parse_xml_from_zip_artifacts(downloaded_artifacts)
-        rows = _fetch_pr_info(async_iterator_to_list(rows))
-        db.insert_rows(rows)
+def fetch_data_for_pr(pr: PR) -> None:
+    with cli.options.db_config.connect() as db:
+        with cli.console.status("Fetching XML artifacts"):
+            rows = asyncio.run(Fetcher()._fetch_and_parse_artifacts_for_pr(pr))
+            db.insert_rows(rows)
 
 
-def _list_remote_artifacts(
-    repos: list[str],
-    artifact_globs: list[str],
-) -> list[Artifact]:
-    debug(f"Listing remote artifacts matching: {artifact_globs} for repos: {repos}")
+class Fetcher:
+    """
+    Fetch, parse, and load test data from junit XML artifacts from GitHub CI.
 
-    async def _list_artifacts():
+    We use two threads: one for the asyncio event loop to perform concurrent
+    fetches from the GitHub API, and one for parsing the XML.
+    """
+
+    def __init__(self):
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self.artifact_globs = cli.options.artifact_globs
+
+    async def _fetch_and_parse_artifacts_for_repo(
+        self,
+        repo: str,
+    ) -> AsyncIterator[TestResult]:
+        prs = await gh.prs(repo, since=cli.options.since)
+        for test_results_fut in asyncio.as_completed(
+            self._fetch_and_parse_artifacts_for_pr(pr) for pr in prs
+        ):
+            for test_result in await test_results_fut:
+                yield test_result
+
+    async def _fetch_and_parse_artifacts_for_pr(self, pr: gh.PR) -> list[TestResult]:
+        runs = await gh.runs_via_workflows(pr.repo, pr.branch)
         return list(
-            filter(
-                lambda a: any(fnmatch(a["name"], g) for g in artifact_globs),
-                chain.from_iterable(
-                    await asyncio.gather(*map(_list_remote_artifacts_for_repo, repos))
-                ),
+            chain.from_iterable(
+                [
+                    (await rows)
+                    for rows in asyncio.as_completed(
+                        self._fetch_and_parse_artifacts_for_run(run, pr) for run in runs
+                    )
+                ]
             )
         )
 
-    return asyncio.run(_list_artifacts())
-
-
-async def _list_remote_artifacts_for_repo(repo: str) -> list[Artifact]:
-    return [
-        {
-            "repo": repo,
-            "name": artifact["name"],
-            "id": artifact["id"],
-            "url": artifact["url"],
-            "run_id": artifact["workflow_run"]["id"],
-            "branch": artifact["workflow_run"]["head_branch"],
-            "commit": artifact["workflow_run"]["head_sha"],
-        }
-        for page in (await gh.api_all_pages(f"/repos/{repo}/actions/artifacts"))
-        for artifact in page["artifacts"]
-        if not artifact["expired"]
-    ]
-
-
-def _get_artifacts_not_in_db(
-    db: DB,
-    available_artifacts: list[Artifact],
-) -> list[Artifact]:
-    # TODO: Avoid repeatedly downloading artifacts that do not contribute tests
-    existing_artifacts = {
-        s
-        for (s,) in db.connection.execute(
-            "SELECT DISTINCT artifact FROM test"
-        ).fetchall()
-    }
-    return [a for a in available_artifacts if a["name"] not in existing_artifacts]
-
-
-async def _download_zip_artifacts(
-    artifacts: list[Artifact],
-) -> AsyncIterator[tuple[Artifact, bytes]]:
-    debug(
-        f"Downloading {len(artifacts)} artifacts",
-        ", ".join(a["name"] for a in artifacts[:3]),
-        "..." if len(artifacts) > 3 else "",
-    )
-
-    semaphore = asyncio.Semaphore(10)
-
-    async def fetch_zip(artifact: Artifact) -> tuple[Artifact, Optional[bytes]]:
-        async with semaphore:
-            debug(
-                f"Acquired semaphore for artifact: {artifact['name']} from: {artifact['repo']}"
-            )
+    async def _fetch_and_parse_artifacts_for_run(
+        self, run: Run, pr: PR
+    ) -> List[TestResult]:
+        with tempfile.TemporaryDirectory() as dir:
+            dir = Path(dir)
             try:
-                zip_data = await asyncio.wait_for(
-                    gh.api_bytes(
-                        f"/repos/{artifact['repo']}/actions/artifacts/{artifact['id']}/zip"
-                    ),
-                    timeout=10.0,
-                )
-                debug(
-                    f"Successfully downloaded artifact: {artifact['name']} from: {artifact['repo']}"
-                )
-                return artifact, zip_data
-            except asyncio.TimeoutError:
-                warn(
-                    f"Timeout while downloading artifact {artifact['name']} from {artifact['repo']}"
-                )
-                return artifact, None
-            except Exception as e:
-                warn(
-                    f"Failed to download artifact {artifact['name']} from {artifact['repo']}: {e}"
-                )
-                return artifact, None
-
-    # Schedule the tasks
-    tasks = [fetch_zip(artifact) for artifact in artifacts]
-
-    # Process tasks as they complete
-    for coro in asyncio.as_completed(tasks):
-        artifact, zip_data = await coro
-        if zip_data is not None:
-            debug(f"Downloaded artifact: {artifact['name']} from: {artifact['repo']}")
-            yield artifact, zip_data
-
-
-async def _parse_xml_from_zip_artifacts(
-    artifacts: AsyncIterator[tuple[Artifact, bytes]],
-) -> AsyncIterator[TestResult]:
-    async for artifact, zip_bytes in artifacts:
-        with ZipFile(BytesIO(zip_bytes)) as zip_file:
-            for file_name in zip_file.namelist():
-                if file_name.endswith(".xml"):
-                    for tr in _parse_xml_file(file_name, zip_file, artifact):
-                        yield tr
-
-
-def _fetch_pr_info(rows: list[TestResult]) -> Iterator[TestResult]:
-    async def get_prs() -> dict[tuple[str, str], PR]:
-        prs: dict[tuple[str, str], PR] = {}
-        branches = list({(r.branch, r.repo) for r in rows})
-        for (branch, repo), pr in zip(
-            branches,
-            await asyncio.gather(*starmap(gh.pr, branches), return_exceptions=True),
-        ):
-            if isinstance(pr, CalledProcessError):
-                exc = pr
-                del pr
-                if (
-                    exc.stderr
-                    and "no pull requests found for branch"
-                    in exc.stderr.decode().lower()
-                ):
-                    # Ignore, with a warning.
-                    if branch not in ["main", "master"]:
-                        warn(f"Failed to get PR info for {repo}:{branch}: {exc}")
+                await gh.run_download(run, dir, patterns=self.artifact_globs)
+            except gh.CalledProcessError as exc:
+                if exc.stderr and "no valid artifacts" in exc.stderr.decode():
+                    debug(f"Run {run.id} {run.pr or "[no PR]"} has no valid artifacts")
+                    return []
                 else:
                     raise exc
-            elif isinstance(pr, BaseException):
-                exc = pr
-                del pr
-                raise exc
-            else:
-                prs[(repo, branch)] = pr
-        return prs
-
-    prs = asyncio.run(get_prs())
-
-    for row in rows:
-        if pr := prs.get((row.repo, row.branch)):
-            yield row._replace(
-                pr_title=pr.title,
-                pr=pr.number,
+            return await asyncio.get_event_loop().run_in_executor(
+                self.executor, _parse_artifacts_for_run, run, dir, pr
             )
-        else:
-            yield row
+
+
+def _parse_artifacts_for_run(run: Run, dir: Path, pr: PR) -> List[TestResult]:
+    def test_results() -> Iterator[TestResult]:
+        assert not any(
+            dir.glob("*.xml")
+        ), "Expected top-level directory to contain extracted artifact directories"
+        for extracted_artifact_dir in dir.iterdir():
+            assert (
+                extracted_artifact_dir.is_dir()
+            ), f"Expected {extracted_artifact_dir} to be a directory"
+            artifact_name = extracted_artifact_dir.name
+            for file in extracted_artifact_dir.glob("*.xml"):
+                assert file.is_file()
+                yield from _parse_xml_file(artifact_name, file, run, pr)
+
+    return list(test_results())
 
 
 def _parse_xml_file(
-    file_name: str, zip_file: ZipFile, artifact: Artifact
+    artifact_name: str, file: Path, run: Run, pr: PR
 ) -> Iterator[TestResult]:
     empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)
-    xml = zip_file.read(file_name).decode()
-    if not xml:
-        warn(f"Skipping empty XML file {file_name}")
-        return
-    debug(f"Parsing {file_name}: xml length is {len(xml)}")
-    for test_suite in jup.JUnitXml.fromstring(xml):
+    debug(f"Parsing {file}")
+    for test_suite in jup.JUnitXml.fromfile(str(file)):
         for test_case in test_suite:
             # Passed test cases have no result. A failed/skipped test case will
             # typically have a single result, but the schema permits multiple.
             for result in test_case.result or [empty_result]:
                 yield TestResult(
-                    repo=artifact["repo"],
-                    artifact=artifact["name"],
-                    run_id=artifact["run_id"],
-                    branch=artifact["branch"],
-                    sha=artifact["commit"],
-                    pr=0,
-                    pr_title="",
-                    file=file_name,
+                    repo=run.repo,
+                    artifact=artifact_name,
+                    run_id=run.id,
+                    branch=run.branch,
+                    sha=run.sha,
+                    pr=pr.number,
+                    pr_title=pr.title,
+                    file=file.name,
                     suite=test_suite.name,
                     suite_time=datetime.fromisoformat(test_suite.timestamp),
                     suite_duration=test_suite.time,

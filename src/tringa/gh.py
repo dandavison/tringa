@@ -4,12 +4,14 @@ https://cli.github.com/manual/
 """
 
 import json
+import shlex
 import sys
 from subprocess import CalledProcessError
 from typing import Optional
 
 from tringa.exceptions import TringaException
 from tringa.models import PR
+from tringa.msg import debug
 from tringa.utils import execute
 
 
@@ -69,8 +71,10 @@ async def rerun(repo: str, run_id: int) -> None:
 
 
 async def _gh(*args: str) -> bytes:
+    cmd = ["gh", *args]
+    debug(shlex.join(cmd))
     try:
-        return await execute(["gh", *args])
+        return await execute(cmd)
     except FileNotFoundError as err:
         if "'gh'" in str(err):
             print(

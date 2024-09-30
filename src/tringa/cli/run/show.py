@@ -5,7 +5,7 @@ from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
 
 from tringa.cli import reports
-from tringa.cli.reports import failed_tests, flaky_tests
+from tringa.cli.reports import failed_tests, flaky_tests, status_checks
 from tringa.db import DB
 from tringa.models import Run
 
@@ -15,6 +15,7 @@ class Report(reports.Report):
     run: Run
     failed_tests: failed_tests.Report
     flaky_tests: flaky_tests.Report
+    status_checks: status_checks.Report
 
     def to_dict(self) -> dict:
         return {
@@ -38,6 +39,10 @@ class Report(reports.Report):
                 f"[link={self.run.url}]{humanize.naturaltime(self.run.started_at)}[/link]",
             )
             yield (
+                "Status checks",
+                self.status_checks.summary(),
+            )
+            yield (
                 "Failed tests",
                 self.failed_tests.summary(),
             )
@@ -57,4 +62,5 @@ def make_report(db: DB, run: Run) -> Report:
         run=run,
         failed_tests=failed_tests.make_report(db),
         flaky_tests=flaky_tests.make_report(db),
+        status_checks=status_checks.make_report(run.pr.status_checks if run.pr else []),
     )

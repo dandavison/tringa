@@ -12,7 +12,7 @@ from textual.widgets import Collapsible, ListItem, ListView, RichLog, Static
 from textual.widgets._collapsible import CollapsibleTitle
 
 import tringa.cli.run.show
-from tringa.cli.reports import failed_tests, flaky_tests
+from tringa.cli.reports import failed_tests, flaky_tests, status_checks
 from tringa.models import PR, Run, TestResult
 
 
@@ -156,6 +156,7 @@ if __name__ == "__main__":
                     title="title",
                     branch="branch",
                     number=77,
+                    status_checks=[],
                 ),
                 branch="branch",
                 sha="sha",
@@ -192,5 +193,6 @@ ZeroDivisionError: division by zero""",
                 * 7
             ),
             flaky_tests=flaky_tests.Report(tests=[]),
+            status_checks=status_checks.Report(status_checks=[]),
         )
     )

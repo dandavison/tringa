@@ -87,4 +87,4 @@ def tui(pr: PrOption = None) -> NoReturn:
 
 def _get_last_run(pr: PR) -> Run:
     with cli.options.db_config.connect() as db:
-        return queries.last_run(db, pr.repo, pr.branch)
+        return queries.last_run(db, pr)

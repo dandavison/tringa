@@ -5,6 +5,7 @@ from typing import DefaultDict
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
 
+from tringa import cli
 from tringa.cli import reports
 from tringa.db import DB
 from tringa.models import Run, TestResult
@@ -79,12 +80,19 @@ class Summary(reports.Report):
     tests: list[FlakyTest]
 
     def to_dict(self) -> dict:
-        return {"test_names": [t.name for t in self.tests]}
+        return {"test_names": sorted({t.name for t in self.tests})}
 
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
-        for test in self.tests:
+        seen = set()
+        for i, test in enumerate(sorted(self.tests, key=lambda x: x.name)):
+            if i + 1 == cli.options.table_row_limit:
+                yield f"...[{len(self.tests) - i} more]"
+                break
+            if test.name in seen:
+                continue
+            seen.add(test.name)
             if run := next((pr.run for pr in test.prs_with_failures), None):
                 yield f"[link={run.url}]{test.name}[/link]"
             else:

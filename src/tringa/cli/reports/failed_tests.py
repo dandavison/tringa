@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from rich.console import Console, ConsoleOptions, RenderResult
 from rich.table import Table
 
+from tringa import cli
 from tringa.cli import reports
 from tringa.db import DB
 from tringa.models import TestResult
@@ -14,7 +15,7 @@ class Report(reports.Report):
     tests: list[TestResult]
 
     def summary(self) -> "Summary":
-        return Summary(tests=self.tests)
+        return Summary(names=sorted({t.name for t in self.tests}))
 
     def to_dict(self) -> dict:
         return {
@@ -24,7 +25,7 @@ class Report(reports.Report):
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
-        for test in self.tests:
+        for test in sorted(self.tests, key=lambda x: x.name):
             table = Table(f"[bold red]{test.name}[/]")
             table.add_row(test.text or "")
             yield table
@@ -32,18 +33,21 @@ class Report(reports.Report):
 
 @dataclass
 class Summary(reports.Report):
-    tests: list[TestResult]
+    names: list[str]
 
     def to_dict(self) -> dict:
         return {
-            "tests": [t.name for t in self.tests],
+            "tests": self.names,
         }
 
     def __rich_console__(
         self, console: Console, options: ConsoleOptions
     ) -> RenderResult:
-        for test in self.tests:
-            yield f"[red]{test.name}[/]"
+        for i, test in enumerate(self.names):
+            if i + 1 == cli.options.table_row_limit:
+                yield f"[red]...[{len(self.names) - i} more][/]"
+                break
+            yield f"[red]{test}[/]"
 
 
 def make_report(db: DB) -> Report:

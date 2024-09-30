@@ -11,7 +11,7 @@ from tringa.annotations import flaky as flaky
 from tringa.cli.output import tringa_print
 from tringa.cli.repo import show
 from tringa.cli.reports import flaky_tests
-from tringa.fetch import fetch_test_data
+from tringa.fetch import fetch_data_for_repo
 from tringa.utils import execute  # Import the execute function
 
 app = typer.Typer(rich_markup_mode="rich")
@@ -32,7 +32,7 @@ def _flakes(
     repo: RepoOption = None,
 ) -> None:
     """Show flaky tests in this repository."""
-    repo = _get_repo(repo)
+    repo = sync(repo)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
         tringa_print(flaky_tests.make_report(db))
 
@@ -54,7 +54,7 @@ def repl(
     """
     Start an interactive REPL allowing execution of SQL queries against tests in this repository.
     """
-    repo = _get_repo(repo)
+    repo = sync(repo)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
         tringa.repl.repl(db, repl)
 
@@ -64,7 +64,7 @@ def _show(
     repo: RepoOption = None,
 ) -> None:
     """View a summary of tests in this repository."""
-    repo = _get_repo(repo)
+    repo = sync(repo)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
         tringa_print(show.make_report(db, repo))
 
@@ -78,15 +78,15 @@ def sql(
     repo: RepoOption = None,
 ) -> None:
     """Execute a SQL query against tests in this repository."""
-    repo = _get_repo(repo)
+    repo = sync(repo)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
         tringa_print(db.connection.sql(query))
 
 
-def _get_repo(repo: RepoOption) -> str:
+def sync(repo: RepoOption) -> str:
     repo = _validate_repo_arg(repo) if repo else _infer_repo()
-    # TODO: this isn't the right place for this
-    fetch_test_data(repo)
+    if not cli.options.nosync:
+        fetch_data_for_repo(repo)
     return repo
 
 

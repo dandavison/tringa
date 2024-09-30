@@ -26,14 +26,19 @@ class Artifact(TypedDict):
     commit: str
 
 
-def fetch_test_data(repo: str) -> None:
-    if cli.options.nofetch:
-        return
+def fetch_data_for_repo(repo: str) -> None:
     with cli.options.db_config.connect() as db:
-        # We fetch for the entire repo, even when the requested scope is `run`, in
-        # order to collect information across branches used to identify flakes.
         with cli.console.status("Fetching XML artifacts"):
-            rows = Fetcher().fetch_and_load_new_artifacts_for_repo(repo)
+            rows = async_iterator_to_list(
+                Fetcher()._fetch_and_parse_artifacts_for_repo(repo)
+            )
+            db.insert_rows(rows)
+
+
+def fetch_data_for_pr(pr: PR) -> None:
+    with cli.options.db_config.connect() as db:
+        with cli.console.status("Fetching XML artifacts"):
+            rows = asyncio.run(Fetcher()._fetch_and_parse_artifacts_for_pr(pr))
             db.insert_rows(rows)
 
 
@@ -48,12 +53,6 @@ class Fetcher:
     def __init__(self):
         self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.artifact_globs = cli.options.artifact_globs
-
-    def fetch_and_load_new_artifacts_for_repo(
-        self,
-        repo: str,
-    ) -> list[TestResult]:
-        return async_iterator_to_list(self._fetch_and_parse_artifacts_for_repo(repo))
 
     async def _fetch_and_parse_artifacts_for_repo(
         self,

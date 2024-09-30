@@ -34,6 +34,14 @@ def dropdb():
     info("Deleted database at", path)
 
 
+@app.command()
+def sync(_repo: repo.RepoOption = None):
+    """
+    Fetch data for the current repository.
+    """
+    repo.sync(_repo)
+
+
 warnings.filterwarnings(
     "ignore",
     message="Attempting to work in a virtualenv. If you encounter problems, please install IPython inside the virtualenv.",

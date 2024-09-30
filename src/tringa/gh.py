@@ -14,7 +14,7 @@ from subprocess import CalledProcessError
 from typing import Optional, TypedDict
 
 from tringa.exceptions import TringaException
-from tringa.models import PR, Run
+from tringa.models import PR, Run, StatusCheck
 from tringa.msg import debug
 from tringa.utils import execute
 
@@ -36,7 +36,7 @@ async def prs(repo: str, since: timedelta) -> list[PR]:
         "pr",
         "list",
         "--json",
-        "headRefName,headRepository,headRepositoryOwner,title,number",
+        "headRefName,headRepository,headRepositoryOwner,title,number,statusCheckRollup",
     ]
     if since is not None:
         then = datetime.now() - since
@@ -52,7 +52,7 @@ async def pr(pr_identifier: Optional[str] = None, repo: Optional[str] = None) ->
         "pr",
         "view",
         "--json",
-        "headRefName,headRepository,headRepositoryOwner,title,number",
+        "headRefName,headRepository,headRepositoryOwner,title,number,statusCheckRollup",
     ]
     if pr_identifier is not None:
         cmd.append(pr_identifier)
@@ -67,6 +67,16 @@ def _pr(data: dict) -> PR:
         number=data["number"],
         title=data["title"],
         branch=data["headRefName"],
+        status_checks=[
+            StatusCheck(
+                name=d["name"],
+                status=d["status"],
+                conclusion=d["conclusion"],
+                workflow_name=d["workflowName"],
+            )
+            for d in data["statusCheckRollup"]
+            if d["__typename"] == "CheckRun"
+        ],
     )
 
 

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import NamedTuple, Optional, Protocol, runtime_checkable
+from typing import Literal, NamedTuple, Optional, Protocol, runtime_checkable
 
 
 @runtime_checkable
@@ -9,11 +9,54 @@ class Serializable(Protocol):
 
 
 @dataclass
+class StatusCheck:
+    """
+    E.g.
+    {
+      "__typename": "CheckRun",
+      "completedAt": "0001-01-01T00:00:00Z",
+      "conclusion": "",
+      "detailsUrl": "https://github.com/temporalio/sdk-python/actions/runs/10890746589/job/30849903991",
+      "name": "build-lint-test (3.8, ubuntu-latest)",
+      "startedAt": "2024-09-30T11:10:14Z",
+      "status": "IN_PROGRESS",
+      "workflowName": "Continuous Integration"
+    }
+    """
+
+    conclusion: str
+    name: str
+    status: Literal["IN_PROGRESS", "COMPLETED"]
+    workflow_name: str
+
+    def to_dict(self) -> dict:
+        return {
+            "conclusion": self.conclusion,
+            "name": self.name,
+            "status": self.status,
+            "workflow_name": self.workflow_name,
+        }
+
+    def __rich__(self) -> str:
+        match self.conclusion:
+            case "SUCCESS":
+                color = "green"
+            case "FAILURE":
+                color = "red"
+            case "IN_PROGRESS":
+                color = "yellow"
+            case _:
+                color = "gray"
+        return f"[{color}]{self.name} {self.status} {self.conclusion}[/{color}]"
+
+
+@dataclass
 class PR:
     repo: str
     number: int
     title: str
     branch: str
+    status_checks: list[StatusCheck]
 
     @property
     def url(self) -> str:
@@ -91,6 +134,7 @@ class TestResult(NamedTuple):
             number=self.pr,
             title=self.pr_title,
             branch=self.branch,
+            status_checks=[],
         )
 
 

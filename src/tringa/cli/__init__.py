@@ -21,6 +21,7 @@ class GlobalOptions:
     nosync: bool
     tui: bool
     verbose: int
+    table_row_limit: int = 20
 
 
 options: GlobalOptions

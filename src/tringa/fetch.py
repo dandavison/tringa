@@ -98,24 +98,24 @@ class Fetcher:
 
 def _parse_artifacts_for_run(run: Run, dir: Path, pr: PR) -> List[TestResult]:
     def test_results() -> Iterator[TestResult]:
-        for file in dir.rglob("*.xml"):
-            if file.is_file():
-                # TODO: is Artifact needed?
-                artifact = Artifact(
-                    repo=run.repo,
-                    name=file.name,
-                    id=run.id,
-                    url=run.url,
-                    run_id=run.id,
-                    branch=run.branch,
-                    commit=run.sha,
-                )
-                yield from _parse_xml_file(file, artifact, pr)
+        assert not any(
+            dir.glob("*.xml")
+        ), "Expected top-level directory to contain extracted artifact directories"
+        for extracted_artifact_dir in dir.iterdir():
+            assert (
+                extracted_artifact_dir.is_dir()
+            ), f"Expected {extracted_artifact_dir} to be a directory"
+            artifact_name = extracted_artifact_dir.name
+            for file in extracted_artifact_dir.glob("*.xml"):
+                assert file.is_file()
+                yield from _parse_xml_file(artifact_name, file, run, pr)
 
     return list(test_results())
 
 
-def _parse_xml_file(file: Path, artifact: Artifact, pr: PR) -> Iterator[TestResult]:
+def _parse_xml_file(
+    artifact_name: str, file: Path, run: Run, pr: PR
+) -> Iterator[TestResult]:
     empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)
     debug(f"Parsing {file}")
     for test_suite in jup.JUnitXml.fromfile(str(file)):
@@ -124,11 +124,11 @@ def _parse_xml_file(file: Path, artifact: Artifact, pr: PR) -> Iterator[TestResu
             # typically have a single result, but the schema permits multiple.
             for result in test_case.result or [empty_result]:
                 yield TestResult(
-                    repo=artifact["repo"],
-                    artifact=artifact["name"],
-                    run_id=artifact["run_id"],
-                    branch=artifact["branch"],
-                    sha=artifact["commit"],
+                    repo=run.repo,
+                    artifact=artifact_name,
+                    run_id=run.id,
+                    branch=run.branch,
+                    sha=run.sha,
                     pr=pr.number,
                     pr_title=pr.title,
                     file=file.name,

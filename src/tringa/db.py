@@ -18,8 +18,8 @@ from tringa.msg import debug
 
 CREATE_SCHEMA_SQL = """
 CREATE TABLE test (
-    artifact VARCHAR,
     repo VARCHAR,
+    artifact VARCHAR,
     branch VARCHAR,
     run_id INT64,
     sha VARCHAR,
@@ -29,8 +29,8 @@ CREATE TABLE test (
     suite VARCHAR,
     suite_time TIMESTAMP,
     suite_duration FLOAT,
-    name VARCHAR,
     classname VARCHAR,
+    name VARCHAR,
     duration FLOAT,
     passed BOOLEAN,
     skipped BOOLEAN,
@@ -46,8 +46,8 @@ CREATE INDEX idx_artifact ON test(artifact)
 
 INSERT_ROWS_SQL = """
 INSERT INTO test (
-    artifact,
     repo,
+    artifact,
     branch,
     run_id,
     sha,
@@ -57,8 +57,8 @@ INSERT INTO test (
     suite,
     suite_time,
     suite_duration,
-    name,
     classname,
+    name,
     duration,
     passed,
     skipped,

@@ -23,16 +23,36 @@ $ uv tool install git+https://github.com/dandavison/tringa
 ```
 $ tringa --help
 ```
-<img width="856" alt="image" src="https://github.com/user-attachments/assets/e763b96a-f879-4d3a-985a-11b37db949cb">
+
+<img width="1295" alt="image" src="https://github.com/user-attachments/assets/218442ce-7109-47c2-8824-4f482e8e3923">
 
 Some commands print to the terminal, some bring up a TUI, and some bring up a SQL REPL for interactive queries.
 By default the database is `duckdb` and persists across invocations.
 The REPL can be a traditional SQL REPL, or a Python session using the [DuckDB Python API](https://duckdb.org/docs/api/python/overview.html).
 
+#### Repo overview
+
+```
+$ tringa repo show
+```
+
+<img width="1295" alt="image" src="https://github.com/user-attachments/assets/64092fb9-36d6-4b10-9889-ef0314570a36">
+
+
+#### PR overview
+
+```
+$ tringa pr show
+```
+
+<img width="1295" alt="image" src="https://github.com/user-attachments/assets/2efbca87-d91f-4487-bb41-9b83f36961e8">
+
+
+
 #### TUI
 
 ```
-$ tringa --tui pr
+$ tringa pr tui
 ```
 
 <img width="1295" alt="image" src="https://github.com/user-attachments/assets/765bd3f3-f333-4c23-8ecf-0326097469dd">

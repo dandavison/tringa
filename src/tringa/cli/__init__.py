@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
-from typing import Optional
+from typing import Annotated, Optional
 
 import typer
 from xdg_base_dirs import xdg_data_home
@@ -18,7 +18,7 @@ class GlobalOptions:
     since: timedelta
     db_config: DBConfig
     json: bool
-    nofetch: bool
+    nosync: bool
     tui: bool
     verbose: int
 
@@ -31,7 +31,9 @@ def set_options(
     since_days: int = 90,
     db_path: Optional[Path] = None,
     json: bool = False,
-    nofetch: bool = False,
+    nosync: Annotated[
+        bool, typer.Option("--nosync", "-n", help="Do not fetch data.")
+    ] = False,
     tui: bool = False,
     verbose: int = 1,
 ):
@@ -53,7 +55,7 @@ def set_options(
         since=timedelta(days=since_days),
         db_config=DBConfig(path=db_path),
         json=json,
-        nofetch=nofetch,
+        nosync=nosync,
         tui=tui,
         verbose=verbose,
     )

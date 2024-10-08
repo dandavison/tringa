@@ -40,35 +40,6 @@ CREATE TABLE test (
 );
 """
 
-CREATE_INDEX_SQL = """
-CREATE INDEX idx_artifact ON test(artifact)
-"""
-
-INSERT_ROWS_SQL = """
-INSERT INTO test (
-    repo,
-    artifact,
-    branch,
-    run_id,
-    sha,
-    pr,
-    pr_title,
-    file,
-    suite,
-    suite_time,
-    suite_duration,
-    classname,
-    name,
-    duration,
-    passed,
-    skipped,
-    flaky,
-    message,
-    text
-)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-"""
-
 
 @dataclass
 class DB:
@@ -82,7 +53,6 @@ class DB:
 
     def create_schema(self) -> None:
         self.connection.execute(CREATE_SCHEMA_SQL)
-        self.connection.execute(CREATE_INDEX_SQL)
 
     def insert_rows(self, rows: Iterable[TestResult]) -> None:
         # Inserting columns from a dataframe is more efficient than inserting

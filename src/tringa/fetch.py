@@ -120,6 +120,8 @@ def _parse_xml_file(
     debug(f"Parsing {file}")
     for test_suite in jup.JUnitXml.fromfile(str(file)):
         for test_case in test_suite:
+            if not test_case.name:
+                continue
             # Passed test cases have no result. A failed/skipped test case will
             # typically have a single result, but the schema permits multiple.
             for result in test_case.result or [empty_result]:
@@ -136,7 +138,7 @@ def _parse_xml_file(
                     suite_time=datetime.fromisoformat(test_suite.timestamp),
                     suite_duration=test_suite.time,
                     name=test_case.name,
-                    classname=test_case.classname,
+                    classname=test_case.classname or "",
                     flaky=False,
                     duration=test_case.time,
                     passed=test_case.is_passed,

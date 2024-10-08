@@ -62,7 +62,7 @@ $ tringa pr tui
 The DB has one table, named `test`.
 
 ```
-$ tringa pr --repl sql
+$ tringa pr repl
 ```
 
 ```

@@ -18,6 +18,11 @@ Use [uv](https://docs.astral.sh/uv/):
 $ uv tool install git+https://github.com/dandavison/tringa
 ```
 
+And log in with [gh](https://cli.github.com/).
+```
+$ gh auth login
+```
+
 ### Example usage
 
 ```

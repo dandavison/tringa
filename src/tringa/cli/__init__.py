@@ -14,7 +14,7 @@ from tringa.db import DBConfig
 
 @dataclass
 class GlobalOptions:
-    artifact_globs: Optional[list[str]]
+    artifact_globs: list[str]
     since: timedelta
     db_config: DBConfig
     json: bool
@@ -28,7 +28,7 @@ options: GlobalOptions
 
 
 def set_options(
-    artifact_globs: Optional[list[str]] = None,
+    artifact_globs: list[str] = ["*junit*", "*xunit*", "*xml*"],
     since_days: int = 90,
     db_path: Optional[Path] = None,
     json: bool = False,

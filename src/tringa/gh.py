@@ -14,6 +14,7 @@ from typing import Optional, TypedDict
 
 from tringa.exceptions import TringaException
 from tringa.models import PR, Run, StatusCheck
+from tringa.msg import debug
 from tringa.utils import execute
 
 
@@ -139,13 +140,19 @@ async def runs(repo: str, branch: str, workflow_id: Optional[int] = None) -> lis
     ]
 
 
-async def run_download(
-    run: Run, dir: Path, patterns: Optional[list[str]] = None
-) -> None:
+async def run_download(run: Run, dir: Path, patterns: list[str]) -> None:
     args = ["run", "download", str(run.id), "--repo", run.repo, "--dir", str(dir)]
-    for p in patterns or []:
+    for p in patterns:
         args.extend(["--pattern", p])
-    await _gh(*args)
+    try:
+        await _gh(*args)
+    except CalledProcessError as exc:
+        if exc.stderr and "no artifact matches" in exc.stderr.decode():
+            debug(
+                f"Run {run.id} {run.pr or "[no PR]"} has no artifacts matching patterns: {patterns}"
+            )
+        else:
+            raise
 
 
 async def rerun(repo: str, run_id: int) -> None:

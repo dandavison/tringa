@@ -27,18 +27,18 @@ class Artifact(TypedDict):
 
 
 def fetch_data_for_repo(repo: str) -> None:
+    with cli.console.status("Fetching XML artifacts"):
+        rows = async_iterator_to_list(
+            Fetcher()._fetch_and_parse_artifacts_for_repo(repo)
+        )
     with cli.options.db_config.connect() as db:
-        with cli.console.status("Fetching XML artifacts"):
-            rows = async_iterator_to_list(
-                Fetcher()._fetch_and_parse_artifacts_for_repo(repo)
-            )
-            db.insert_rows(rows)
+        db.insert_rows(rows)
 
 
 def fetch_data_for_pr(pr: PR) -> None:
-    with cli.options.db_config.connect() as db:
-        with cli.console.status("Fetching XML artifacts"):
-            rows = asyncio.run(Fetcher()._fetch_and_parse_artifacts_for_pr(pr))
+    with cli.console.status("Fetching XML artifacts"):
+        rows = asyncio.run(Fetcher()._fetch_and_parse_artifacts_for_pr(pr))
+        with cli.options.db_config.connect() as db:
             db.insert_rows(rows)
 
 

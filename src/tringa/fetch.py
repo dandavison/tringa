@@ -118,6 +118,7 @@ def _parse_xml_file(
 ) -> Iterator[TestResult]:
     empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)
     debug(f"Parsing {file}")
+    MAX_TEST_OUTPUT_LENGTH = 10_000
     for test_suite in jup.JUnitXml.fromfile(str(file)):
         for test_case in test_suite:
             if not test_case.name:
@@ -125,6 +126,12 @@ def _parse_xml_file(
             # Passed test cases have no result. A failed/skipped test case will
             # typically have a single result, but the schema permits multiple.
             for result in test_case.result or [empty_result]:
+                text = result.text
+                if text and len(text) > MAX_TEST_OUTPUT_LENGTH:
+                    debug(
+                        f"Truncating {file} output from {len(text)} to {MAX_TEST_OUTPUT_LENGTH}"
+                    )
+                    text = text[:MAX_TEST_OUTPUT_LENGTH] + "...<truncated by tringa>"
                 yield TestResult(
                     repo=run.repo,
                     artifact=artifact_name,
@@ -144,5 +151,5 @@ def _parse_xml_file(
                     passed=test_case.is_passed,
                     skipped=test_case.is_skipped,
                     message=result.message,
-                    text=result.text,
+                    text=text,
                 )

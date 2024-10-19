@@ -57,3 +57,7 @@ def main():
     except duckdb.IOException as e:
         error(e)
         exit(1)
+
+
+if __name__ == "__main__":
+    main()

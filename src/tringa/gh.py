@@ -161,9 +161,8 @@ async def rerun(repo: str, run_id: int) -> None:
 
 
 async def _gh(*args: str) -> bytes:
-    cmd = ["gh", *args]
     try:
-        return await execute(cmd)
+        return await execute(["gh", *args])
     except FileNotFoundError as err:
         if "'gh'" in str(err):
             print(

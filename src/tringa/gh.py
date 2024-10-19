@@ -5,7 +5,6 @@ https://cli.github.com/manual/
 
 import asyncio
 import json
-import shlex
 import sys
 from datetime import datetime, timedelta
 from itertools import chain
@@ -15,7 +14,6 @@ from typing import Optional, TypedDict
 
 from tringa.exceptions import TringaException
 from tringa.models import PR, Run, StatusCheck
-from tringa.msg import debug
 from tringa.utils import execute
 
 
@@ -164,7 +162,6 @@ async def rerun(repo: str, run_id: int) -> None:
 
 async def _gh(*args: str) -> bytes:
     cmd = ["gh", *args]
-    debug(shlex.join(cmd))
     try:
         return await execute(cmd)
     except FileNotFoundError as err:

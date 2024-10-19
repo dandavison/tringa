@@ -83,14 +83,8 @@ class Fetcher:
     ) -> List[TestResult]:
         with tempfile.TemporaryDirectory() as dir:
             dir = Path(dir)
-            try:
-                await gh.run_download(run, dir, patterns=self.artifact_globs)
-            except gh.CalledProcessError as exc:
-                if exc.stderr and "no valid artifacts" in exc.stderr.decode():
-                    debug(f"Run {run.id} {run.pr or "[no PR]"} has no valid artifacts")
-                    return []
-                else:
-                    raise exc
+            if not await gh.run_download(run, dir, patterns=self.artifact_globs):
+                return []
             return await asyncio.get_event_loop().run_in_executor(
                 self.executor, _parse_artifacts_for_run, run, dir, pr
             )

@@ -140,19 +140,26 @@ async def runs(repo: str, branch: str, workflow_id: Optional[int] = None) -> lis
     ]
 
 
-async def run_download(run: Run, dir: Path, patterns: list[str]) -> None:
+async def run_download(run: Run, dir: Path, patterns: list[str]) -> bool:
     args = ["run", "download", str(run.id), "--repo", run.repo, "--dir", str(dir)]
     for p in patterns:
         args.extend(["--pattern", p])
     try:
         await _gh(*args)
     except CalledProcessError as exc:
-        if exc.stderr and "no artifact matches" in exc.stderr.decode():
+        stderr = exc.stderr.decode() if exc.stderr else ""
+        if "no artifact matches" in stderr:
             debug(
                 f"Run {run.id} {run.pr or "[no PR]"} has no artifacts matching patterns: {patterns}"
             )
+            return False
+        elif "no valid artifacts" in stderr:
+            debug(f"Run {run.id} {run.pr or "[no PR]"} has no valid artifacts")
+            return False
         else:
             raise
+    else:
+        return True
 
 
 async def rerun(repo: str, run_id: int) -> None:

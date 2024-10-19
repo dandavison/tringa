@@ -118,7 +118,7 @@ def _parse_xml_file(
 ) -> Iterator[TestResult]:
     empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)
     debug(f"Parsing {file}")
-    MAX_TEST_OUTPUT_LENGTH = 10_000
+    MAX_TEST_OUTPUT_LENGTH = 100_000
     for test_suite in jup.JUnitXml.fromfile(str(file)):
         for test_case in test_suite:
             if not test_case.name:

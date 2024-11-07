@@ -92,9 +92,10 @@ class Fetcher:
 
 def _parse_artifacts_for_run(run: Run, dir: Path, pr: PR) -> List[TestResult]:
     def test_results() -> Iterator[TestResult]:
+        top_level_xmls = [p for p in dir.glob("*.xml") if p.is_file()]
         assert not any(
-            dir.glob("*.xml")
-        ), "Expected top-level directory to contain extracted artifact directories"
+            top_level_xmls
+        ), f"Expected top-level directory {dir} not to contain XML files, but contains: {top_level_xmls}"
         for extracted_artifact_dir in dir.iterdir():
             assert (
                 extracted_artifact_dir.is_dir()

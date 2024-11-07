@@ -5,7 +5,7 @@ from collections import namedtuple
 from datetime import datetime
 from itertools import chain
 from pathlib import Path
-from typing import AsyncIterator, Iterator, List, TypedDict
+from typing import AsyncIterator, Iterator, List, Optional, TypedDict
 
 import junitparser.xunit2 as jup
 
@@ -26,13 +26,13 @@ class Artifact(TypedDict):
     commit: str
 
 
-def fetch_data_for_repo(repo: str) -> None:
-    with cli.console.status("Fetching XML artifacts"):
-        rows = async_iterator_to_list(
-            Fetcher()._fetch_and_parse_artifacts_for_repo(repo)
-        )
+def fetch_data_for_repo(repo: str, branch: Optional[str] = None) -> None:
+    if branch:
+        rows = Fetcher()._fetch_and_parse_artifacts_for_branch(repo, branch)
+    else:
+        rows = Fetcher()._fetch_and_parse_artifacts_for_repo(repo)
     with cli.options.db_config.connect() as db:
-        db.insert_rows(rows)
+        db.insert_rows(async_iterator_to_list(rows))
 
 
 def fetch_data_for_pr(pr: PR) -> None:
@@ -65,6 +65,17 @@ class Fetcher:
             for test_result in await test_results_fut:
                 yield test_result
 
+    async def _fetch_and_parse_artifacts_for_branch(
+        self, repo: str, branch: str
+    ) -> AsyncIterator[TestResult]:
+        runs = await gh.runs(repo, branch)
+
+        for test_results_fut in asyncio.as_completed(
+            self._fetch_and_parse_artifacts_for_run(run) for run in runs
+        ):
+            for test_result in await test_results_fut:
+                yield test_result
+
     async def _fetch_and_parse_artifacts_for_pr(self, pr: gh.PR) -> list[TestResult]:
         runs = await gh.runs_via_workflows(pr.repo, pr.branch)
         return list(
@@ -79,7 +90,7 @@ class Fetcher:
         )
 
     async def _fetch_and_parse_artifacts_for_run(
-        self, run: Run, pr: PR
+        self, run: Run, pr: Optional[PR] = None
     ) -> List[TestResult]:
         with tempfile.TemporaryDirectory() as dir:
             dir = Path(dir)
@@ -90,7 +101,9 @@ class Fetcher:
             )
 
 
-def _parse_artifacts_for_run(run: Run, dir: Path, pr: PR) -> List[TestResult]:
+def _parse_artifacts_for_run(
+    run: Run, dir: Path, pr: Optional[PR] = None
+) -> List[TestResult]:
     def test_results() -> Iterator[TestResult]:
         top_level_xmls = [p for p in dir.glob("*.xml") if p.is_file()]
         assert not any(
@@ -109,7 +122,7 @@ def _parse_artifacts_for_run(run: Run, dir: Path, pr: PR) -> List[TestResult]:
 
 
 def _parse_xml_file(
-    artifact_name: str, file: Path, run: Run, pr: PR
+    artifact_name: str, file: Path, run: Run, pr: Optional[PR]
 ) -> Iterator[TestResult]:
     empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)
     debug(f"Parsing {file}")
@@ -133,8 +146,8 @@ def _parse_xml_file(
                     run_id=run.id,
                     branch=run.branch,
                     sha=run.sha,
-                    pr=pr.number,
-                    pr_title=pr.title,
+                    pr=pr.number if pr else None,
+                    pr_title=pr.title if pr else None,
                     file=file.name,
                     suite=test_suite.name,
                     suite_time=datetime.fromisoformat(test_suite.timestamp),

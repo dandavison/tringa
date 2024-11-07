@@ -62,9 +62,10 @@ def repl(
 @app.command("show")
 def _show(
     repo: RepoOption = None,
+    branch: Optional[str] = None,
 ) -> None:
     """View a summary of tests in this repository."""
-    repo = sync(repo)
+    repo = sync(repo, branch=branch)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
         tringa_print(show.make_report(db, repo))
 
@@ -83,10 +84,10 @@ def sql(
         tringa_print(db.connection.sql(query))
 
 
-def sync(repo: RepoOption) -> str:
+def sync(repo: RepoOption, branch: Optional[str] = None) -> str:
     repo = _validate_repo_arg(repo) if repo else _infer_repo()
     if not cli.options.nosync:
-        fetch_data_for_repo(repo)
+        fetch_data_for_repo(repo, branch=branch)
     return repo
 
 

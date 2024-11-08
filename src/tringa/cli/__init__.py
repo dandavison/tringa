@@ -42,11 +42,13 @@ def set_options(
         raise typer.BadParameter("--tui and --json cannot be used together")
 
     if db_path is None:
-        dir = Path(xdg_data_home()) / "tringa"
-        dir.mkdir(parents=True, exist_ok=True)
-        db_path = dir / "tringa.db"
-    elif not db_path.exists():
-        raise typer.BadParameter(f"DB path {db_path} does not exist")
+        # No session-to-session persistence unless user supplies a path for the db.
+        db_path = Path("/tmp/tringa.db")
+        if db_path.exists():
+            db_path.unlink()
+    else:
+        if not db_path.exists():
+            raise typer.BadParameter(f"DB path {db_path} does not exist")
 
     global options
     options = GlobalOptions(

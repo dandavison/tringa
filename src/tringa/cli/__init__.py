@@ -45,8 +45,6 @@ def set_options(
         dir = Path(xdg_data_home()) / "tringa"
         dir.mkdir(parents=True, exist_ok=True)
         db_path = dir / "tringa.db"
-    elif db_path == ":memory:":
-        db_path = None
     elif not db_path.exists():
         raise typer.BadParameter(f"DB path {db_path} does not exist")
 

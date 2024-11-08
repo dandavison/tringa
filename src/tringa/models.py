@@ -1,11 +1,30 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Literal, NamedTuple, Optional, Protocol, runtime_checkable
+from typing import Literal, NamedTuple, Optional, Protocol, Union, runtime_checkable
+
+SerializableDict = dict[
+    str,
+    Union[
+        str,
+        int,
+        float,
+        bool,
+        None,
+        list[str],
+        list[int],
+        list[float],
+        list[bool],
+        list["SerializableDict"],
+        "SerializableDict",
+    ],
+]
 
 
 @runtime_checkable
 class Serializable(Protocol):
-    def to_dict(self) -> dict: ...
+    def to_dict(
+        self,
+    ) -> SerializableDict: ...
 
 
 @dataclass
@@ -51,7 +70,7 @@ class StatusCheck:
 
 
 @dataclass
-class PR:
+class PR(Serializable):
     repo: str
     number: int
     title: str
@@ -64,6 +83,14 @@ class PR:
 
     def __rich__(self) -> str:
         return f"[link={self.url}]#{self.number} {self.title}[/link]"
+
+    def to_dict(self) -> SerializableDict:
+        return {
+            "repo": self.repo,
+            "number": self.number,
+            "title": self.title,
+            "branch": self.branch,
+        }
 
 
 @dataclass
@@ -79,12 +106,12 @@ class Run(Serializable):
     def url(self) -> str:
         return f"https://github.com/{self.repo}/actions/runs/{self.id}"
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> SerializableDict:
         return {
             "repo": self.repo,
             "id": self.id,
             "started_at": self.started_at.isoformat(),
-            "pr": self.pr.__dict__ if self.pr is not None else None,
+            "pr": self.pr.to_dict() if self.pr is not None else None,
         }
 
     def title(self) -> str:

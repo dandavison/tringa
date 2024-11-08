@@ -8,7 +8,7 @@ from rich.table import Table
 from tringa import cli
 from tringa.cli import reports
 from tringa.db import DB
-from tringa.models import Run, TestResult
+from tringa.models import Run, SerializableDict, TestResult
 from tringa.queries import EmptyParams, Query
 
 
@@ -29,7 +29,7 @@ class Build(reports.Report):
     ) -> RenderResult:
         yield self.__rich__()
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> SerializableDict:
         return {
             "name": self.file,
         }
@@ -48,7 +48,7 @@ class FlakyTestPR(reports.Report):
             table.add_row(build)
         yield table
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> SerializableDict:
         return {
             "run": self.run.to_dict(),
             "failed_builds": [b.to_dict() for b in self.failed_builds],
@@ -68,7 +68,7 @@ class FlakyTest(reports.Report):
             table.add_row(pr.run.pr, "\n".join(b.__rich__() for b in pr.failed_builds))
         yield table
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> SerializableDict:
         return {
             "name": self.name,
             "failed_runs": [r.to_dict() for r in self.prs_with_failures],
@@ -106,7 +106,7 @@ class Report(reports.Report):
     def summary(self) -> Summary:
         return Summary(tests=self.tests)
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> SerializableDict:
         return {"tests": [t.to_dict() for t in self.tests]}
 
     def __rich_console__(

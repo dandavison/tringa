@@ -7,6 +7,7 @@ from rich.text import Text
 from tringa.cli import reports
 from tringa.cli.reports import flaky_tests, slow_tests
 from tringa.db import DB
+from tringa.models import SerializableDict
 from tringa.queries import EmptyParams, Query
 
 
@@ -17,10 +18,10 @@ class Report(reports.Report):
     flaky_tests: flaky_tests.Report
     slow_tests: slow_tests.Report
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> SerializableDict:
         return {
             "repo": self.repo,
-            "flaky_tests": self.flaky_tests,
+            "flaky_tests": self.flaky_tests.to_dict(),
         }
 
     def __rich_console__(

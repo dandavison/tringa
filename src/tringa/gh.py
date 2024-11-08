@@ -5,8 +5,9 @@ https://cli.github.com/manual/
 
 import asyncio
 import json
+import math
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from itertools import chain
 from pathlib import Path
 from subprocess import CalledProcessError
@@ -14,7 +15,7 @@ from typing import Optional, TypedDict
 
 from tringa.exceptions import TringaException
 from tringa.models import PR, Run, StatusCheck
-from tringa.msg import debug
+from tringa.msg import debug, info
 from tringa.utils import execute
 
 
@@ -103,18 +104,25 @@ class _WorkflowData(TypedDict):
     name: str
 
 
-async def runs_via_workflows(repo: str, branch: str) -> list[Run]:
+async def runs_via_workflows(repo: str, since: timedelta, branch: str) -> list[Run]:
     # workaround for https://github.com/cli/cli/issues/9228
     cmd = ["workflow", "list", "--repo", repo, "--json", "id,name"]
     workflows: list[_WorkflowData] = json.loads(await _gh(*cmd))
     return list(
         chain.from_iterable(
-            await asyncio.gather(*[runs(repo, branch, w["id"]) for w in workflows])
+            await asyncio.gather(
+                *[runs(repo, since, branch, w["id"]) for w in workflows]
+            )
         )
     )
 
 
-async def runs(repo: str, branch: str, workflow_id: Optional[int] = None) -> list[Run]:
+async def runs(
+    repo: str,
+    since: timedelta,
+    branch: str,
+    workflow_id: Optional[int] = None,
+) -> list[Run]:
     cmd = [
         "run",
         "list",
@@ -129,17 +137,45 @@ async def runs(repo: str, branch: str, workflow_id: Optional[int] = None) -> lis
     ]
     if workflow_id is not None:
         cmd.extend(["--workflow", str(workflow_id)])
-    return [
+
+    # TODO: there is no obvious way to query for runs since a certain time, so we attempt to fetch
+    # more than necessary and restrict by date after fetching.
+    since_days = math.ceil(since.total_seconds() / (24 * 60 * 60))
+    runs_per_day = 50
+    limit = runs_per_day * since_days
+    cmd.extend(["--limit", str(limit)])
+
+    runs = [
         Run(
             id=data["databaseId"],
             repo=repo,
             branch=data["headBranch"],
             sha=data["headSha"],
-            started_at=data["startedAt"],
+            started_at=datetime.fromisoformat(data["startedAt"]),
             pr=None,
         )
         for data in json.loads(await _gh(*cmd))
     ]
+    ids = [r.id for r in runs]
+    sorted_ids = [r.id for r in sorted(runs, key=lambda r: r.started_at, reverse=True)]
+    if ids != sorted_ids:
+        raise TringaException(
+            "Results from `gh run list` are not sorted by started_at. "
+            "This means that we need to adopt a new strategy for querying for runs by date."
+        )
+    now = datetime.now(timezone.utc)
+    truncated = [r for r in runs if r.started_at > now - since]
+    info(
+        f"`gh run list --limit {limit}` returned {len(runs)} runs, "
+        f"truncated to {len(truncated)} within the last {since_days} days"
+    )
+    if len(truncated) == len(runs):
+        raise TringaException(
+            f"All runs returned by `gh run list --limit {limit}` are within the last {since_days} days. "
+            "--limit in the code should be increased since otherwise it is not guaranteed that "
+            "we have fetched all desired runs."
+        )
+    return truncated
 
 
 async def run_download(run: Run, dir: Path, patterns: list[str]) -> bool:

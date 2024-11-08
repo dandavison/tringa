@@ -2,7 +2,7 @@ import asyncio
 import concurrent.futures
 import tempfile
 from collections import namedtuple
-from datetime import datetime
+from datetime import datetime, timedelta
 from itertools import chain
 from pathlib import Path
 from typing import AsyncIterator, Iterator, List, Optional, TypedDict
@@ -27,21 +27,26 @@ class Artifact(TypedDict):
 
 
 def fetch_data_for_repo(
-    repo: str, branch: Optional[str] = None, workflow_id: Optional[int] = None
+    repo: str,
+    since: timedelta,
+    branch: Optional[str] = None,
+    workflow_id: Optional[int] = None,
 ) -> None:
     if branch:
         rows = Fetcher()._fetch_and_parse_artifacts_for_branch(
-            repo, branch, workflow_id
+            repo, since, branch, workflow_id
         )
     else:
-        rows = Fetcher()._fetch_and_parse_artifacts_for_repo(repo)
+        rows = Fetcher()._fetch_and_parse_artifacts_for_repo(repo, since)
     with cli.options.db_config.connect() as db:
         db.insert_rows(async_iterator_to_list(rows))
 
 
 def fetch_data_for_pr(pr: PR) -> None:
     with cli.console.status("Fetching XML artifacts"):
-        rows = asyncio.run(Fetcher()._fetch_and_parse_artifacts_for_pr(pr))
+        rows = asyncio.run(
+            Fetcher()._fetch_and_parse_artifacts_for_pr(pr, since=cli.options.since)
+        )
         with cli.options.db_config.connect() as db:
             db.insert_rows(rows)
 
@@ -59,20 +64,23 @@ class Fetcher:
         self.artifact_globs = cli.options.artifact_globs
 
     async def _fetch_and_parse_artifacts_for_repo(
-        self,
-        repo: str,
+        self, repo: str, since: timedelta
     ) -> AsyncIterator[TestResult]:
-        prs = await gh.prs(repo, since=cli.options.since)
+        prs = await gh.prs(repo, since=since)
         for test_results_fut in asyncio.as_completed(
-            self._fetch_and_parse_artifacts_for_pr(pr) for pr in prs
+            self._fetch_and_parse_artifacts_for_pr(pr, since) for pr in prs
         ):
             for test_result in await test_results_fut:
                 yield test_result
 
     async def _fetch_and_parse_artifacts_for_branch(
-        self, repo: str, branch: str, workflow_id: Optional[int] = None
+        self,
+        repo: str,
+        since: timedelta,
+        branch: str,
+        workflow_id: Optional[int] = None,
     ) -> AsyncIterator[TestResult]:
-        runs = await gh.runs(repo, branch, workflow_id)
+        runs = await gh.runs(repo, since, branch, workflow_id)
 
         for test_results_fut in asyncio.as_completed(
             self._fetch_and_parse_artifacts_for_run(run) for run in runs
@@ -80,8 +88,10 @@ class Fetcher:
             for test_result in await test_results_fut:
                 yield test_result
 
-    async def _fetch_and_parse_artifacts_for_pr(self, pr: gh.PR) -> list[TestResult]:
-        runs = await gh.runs_via_workflows(pr.repo, pr.branch)
+    async def _fetch_and_parse_artifacts_for_pr(
+        self, pr: gh.PR, since: timedelta
+    ) -> list[TestResult]:
+        runs = await gh.runs_via_workflows(pr.repo, since, pr.branch)
         return list(
             chain.from_iterable(
                 [

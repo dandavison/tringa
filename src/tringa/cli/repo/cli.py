@@ -96,7 +96,9 @@ def sync(
 ) -> str:
     repo = _validate_repo_arg(repo) if repo else _infer_repo()
     if not cli.options.nosync:
-        fetch_data_for_repo(repo, branch=branch, workflow_id=workflow_id)
+        fetch_data_for_repo(
+            repo, cli.options.since, branch=branch, workflow_id=workflow_id
+        )
     return repo
 
 

@@ -118,6 +118,8 @@ async def runs(repo: str, branch: str, workflow_id: Optional[int] = None) -> lis
     cmd = [
         "run",
         "list",
+        "--status",
+        "completed",
         "--repo",
         repo,
         "--branch",

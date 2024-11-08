@@ -26,9 +26,13 @@ class Artifact(TypedDict):
     commit: str
 
 
-def fetch_data_for_repo(repo: str, branch: Optional[str] = None) -> None:
+def fetch_data_for_repo(
+    repo: str, branch: Optional[str] = None, workflow_id: Optional[int] = None
+) -> None:
     if branch:
-        rows = Fetcher()._fetch_and_parse_artifacts_for_branch(repo, branch)
+        rows = Fetcher()._fetch_and_parse_artifacts_for_branch(
+            repo, branch, workflow_id
+        )
     else:
         rows = Fetcher()._fetch_and_parse_artifacts_for_repo(repo)
     with cli.options.db_config.connect() as db:
@@ -66,9 +70,9 @@ class Fetcher:
                 yield test_result
 
     async def _fetch_and_parse_artifacts_for_branch(
-        self, repo: str, branch: str
+        self, repo: str, branch: str, workflow_id: Optional[int] = None
     ) -> AsyncIterator[TestResult]:
-        runs = await gh.runs(repo, branch)
+        runs = await gh.runs(repo, branch, workflow_id)
 
         for test_results_fut in asyncio.as_completed(
             self._fetch_and_parse_artifacts_for_run(run) for run in runs

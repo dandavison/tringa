@@ -30,9 +30,11 @@ RepoOption = Annotated[
 @app.command("flakes")
 def _flakes(
     repo: RepoOption = None,
+    branch: Optional[str] = None,
+    workflow_id: Optional[int] = None,
 ) -> None:
     """Show flaky tests in this repository."""
-    repo = sync(repo)
+    repo = sync(repo, branch=branch, workflow_id=workflow_id)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
         tringa_print(flaky_tests.make_report(db))
 
@@ -40,6 +42,8 @@ def _flakes(
 @app.command()
 def repl(
     repo: RepoOption = None,
+    branch: Optional[str] = None,
+    workflow_id: Optional[int] = None,
     repl: Annotated[
         Optional[tringa.repl.Repl],
         typer.Option(
@@ -54,7 +58,7 @@ def repl(
     """
     Start an interactive REPL allowing execution of SQL queries against tests in this repository.
     """
-    repo = sync(repo)
+    repo = sync(repo, branch=branch, workflow_id=workflow_id)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
         tringa.repl.repl(db, repl)
 
@@ -63,9 +67,10 @@ def repl(
 def _show(
     repo: RepoOption = None,
     branch: Optional[str] = None,
+    workflow_id: Optional[int] = None,
 ) -> None:
     """View a summary of tests in this repository."""
-    repo = sync(repo, branch=branch)
+    repo = sync(repo, branch=branch, workflow_id=workflow_id)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
         tringa_print(show.make_report(db, repo))
 
@@ -77,17 +82,21 @@ def sql(
         typer.Argument(help="SQL to execute."),
     ],
     repo: RepoOption = None,
+    branch: Optional[str] = None,
+    workflow_id: Optional[int] = None,
 ) -> None:
     """Execute a SQL query against tests in this repository."""
-    repo = sync(repo)
+    repo = sync(repo, branch=branch, workflow_id=workflow_id)
     with scoped_db.connect(cli.options.db_config, repo=repo) as db:
         tringa_print(db.connection.sql(query))
 
 
-def sync(repo: RepoOption, branch: Optional[str] = None) -> str:
+def sync(
+    repo: RepoOption, branch: Optional[str] = None, workflow_id: Optional[int] = None
+) -> str:
     repo = _validate_repo_arg(repo) if repo else _infer_repo()
     if not cli.options.nosync:
-        fetch_data_for_repo(repo, branch=branch)
+        fetch_data_for_repo(repo, branch=branch, workflow_id=workflow_id)
     return repo
 
 

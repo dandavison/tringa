@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
-from xdg_base_dirs import xdg_data_home
 
 import tringa.repl
 from tringa import cli as cli
@@ -43,12 +42,9 @@ def set_options(
 
     if db_path is None:
         # No session-to-session persistence unless user supplies a path for the db.
-        db_path = Path("/tmp/tringa.db")
+        db_path = Path("/tmp/__tringa_non_persistent__.db")
         if db_path.exists():
             db_path.unlink()
-    else:
-        if not db_path.exists():
-            raise typer.BadParameter(f"DB path {db_path} does not exist")
 
     global options
     options = GlobalOptions(

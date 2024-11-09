@@ -114,6 +114,23 @@ D SELECT name, type FROM pragma_table_info('test');
 └─────────────────────────────┘
 ```
 
+#### Custom SQL queries
+
+Suppose you want to query for tests that have failed on `main` in the last 7 days:
+
+```
+tringa --json --since-days 7 repo sql \
+  'select classname, name, count(*) as failure_count from test where passed = false and skipped = false group by classname, name order by failure_count desc' \
+  --branch main --workflow-id 80591745 https://github.com/temporalio/temporal
+```
+
+To experiment with alternative SQL queries interactively, change that to `repo repl`:
+```
+uv run tringa --json --since-days 2 repo repl \
+  --branch main --workflow-id 80591745 https://github.com/temporalio/temporal
+```
+
+
 ### Required changes to GitHub Actions workflows
 
 For `tringa` to find output from a CI workflow run, at least one job in the run must upload an artifact containing a directory of junit-xml format files (named uniquely for that job).

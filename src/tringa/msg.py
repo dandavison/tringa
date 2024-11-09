@@ -14,7 +14,7 @@ class LogLevel(IntEnum):
 
     @classmethod
     def from_env(cls) -> "LogLevel":
-        return cls[os.getenv("TRINGA_LOG_LEVEL", "INFO").upper()]
+        return cls[os.getenv("TRINGA_LOG_LEVEL", "WARN").upper()]
 
 
 log_level = LogLevel.from_env()

@@ -1,4 +1,5 @@
-from typing import Union
+from datetime import datetime
+from typing import Any, Union
 
 from duckdb import DuckDBPyRelation
 from rich.console import Console
@@ -21,9 +22,19 @@ def tringa_print(obj: Union[DuckDBPyRelation, Serializable]) -> None:
 
 def print_relation(rel: DuckDBPyRelation) -> None:
     if cli.options.json:
-        console.print_json(data=rel.df().to_dict(orient="records"), sort_keys=True)
+        console.print_json(
+            data=rel.df().to_dict(orient="records"),
+            sort_keys=True,
+            default=_to_serializable,
+        )
     else:
         console.print(rel)
+
+
+def _to_serializable(obj: Any) -> Any:
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    return obj
 
 
 def print_serializable(obj: Serializable) -> None:

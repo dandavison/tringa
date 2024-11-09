@@ -15,18 +15,18 @@ It is in early development and not ready for use.
 Use [uv](https://docs.astral.sh/uv/):
 
 ```
-$ uv tool install git+https://github.com/dandavison/tringa
+uv tool install git+https://github.com/dandavison/tringa
 ```
 
 And log in with [gh](https://cli.github.com/).
 ```
-$ gh auth login
+gh auth login
 ```
 
 ### Example usage
 
 ```
-$ tringa --help
+tringa --help
 ```
 
 <img width="1295" alt="image" src="https://github.com/user-attachments/assets/218442ce-7109-47c2-8824-4f482e8e3923">
@@ -38,7 +38,7 @@ The REPL can be a traditional SQL REPL, or a Python session using the [DuckDB Py
 #### Repo overview
 
 ```
-$ tringa repo show
+tringa repo show
 ```
 
 <img width="1295" alt="image" src="https://github.com/user-attachments/assets/64092fb9-36d6-4b10-9889-ef0314570a36">
@@ -47,7 +47,7 @@ $ tringa repo show
 #### PR overview
 
 ```
-$ tringa pr show
+tringa pr show
 ```
 
 <img width="1295" alt="image" src="https://github.com/user-attachments/assets/2efbca87-d91f-4487-bb41-9b83f36961e8">
@@ -57,17 +57,18 @@ $ tringa pr show
 #### TUI
 
 ```
-$ tringa pr tui
+tringa pr tui
 ```
 
 <img width="1295" alt="image" src="https://github.com/user-attachments/assets/765bd3f3-f333-4c23-8ecf-0326097469dd">
+
 
 #### SQL REPL
 
 The DB has one table, named `test`.
 
 ```
-$ tringa pr repl
+tringa pr repl
 ```
 
 ```

@@ -71,7 +71,7 @@ def last_run(db: DB, pr: PR) -> Run:
     return Run(
         repo=tr.repo,
         id=tr.run_id,
-        started_at=tr.suite_time,
+        created_at=tr.suite_time,
         branch=tr.branch,
         sha=tr.sha,
         pr=pr,

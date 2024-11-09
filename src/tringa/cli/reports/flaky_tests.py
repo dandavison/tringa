@@ -156,7 +156,7 @@ def make_report(db: DB) -> Report:
                             branch=branch,
                             sha=tr.sha,
                             pr=tr.make_pr(),
-                            started_at=tr.suite_time,
+                            created_at=tr.suite_time,
                         ),
                     )
                     for file, tr in file_to_latest_failure.items()

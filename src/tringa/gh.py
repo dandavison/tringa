@@ -135,7 +135,7 @@ async def runs(
         "--branch",
         branch,
         "--json",
-        "databaseId,headBranch,headSha,startedAt",
+        "databaseId,headBranch,headSha,createdAt",
     ]
     if workflow_id is not None:
         cmd.extend(["--workflow", str(workflow_id)])
@@ -146,7 +146,7 @@ async def runs(
             repo=repo,
             branch=data["headBranch"],
             sha=data["headSha"],
-            started_at=datetime.fromisoformat(data["startedAt"]),
+            created_at=datetime.fromisoformat(data["createdAt"]),
             pr=None,
         )
         for data in json.loads(await _gh(*cmd))

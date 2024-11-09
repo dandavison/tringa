@@ -37,7 +37,7 @@ class RunResultsWidget(Static):
                 )
             yield (
                 "Last run",
-                f"[@click=app.open_url('{rr.run.url}')]{humanize.naturaltime(rr.run.started_at)}[/]",
+                f"[@click=app.open_url('{rr.run.url}')]{humanize.naturaltime(rr.run.created_at)}[/]",
             )
             yield (
                 "Failed tests",
@@ -150,7 +150,7 @@ if __name__ == "__main__":
             run=Run(
                 repo="repo",
                 id=0,
-                started_at=datetime.now(),
+                created_at=datetime.now(),
                 pr=PR(
                     repo="repo",
                     title="title",

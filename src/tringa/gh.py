@@ -5,7 +5,6 @@ https://cli.github.com/manual/
 
 import asyncio
 import json
-import math
 import sys
 from datetime import datetime, timedelta, timezone
 from itertools import chain
@@ -123,11 +122,14 @@ async def runs(
     branch: str,
     workflow_id: Optional[int] = None,
 ) -> list[Run]:
+    then = datetime.now(timezone.utc) - since
     cmd = [
         "run",
         "list",
         "--status",
         "completed",
+        "--created",
+        f">{then.date().isoformat()}",
         "--repo",
         repo,
         "--branch",
@@ -137,13 +139,6 @@ async def runs(
     ]
     if workflow_id is not None:
         cmd.extend(["--workflow", str(workflow_id)])
-
-    # TODO: there is no obvious way to query for runs since a certain time, so we attempt to fetch
-    # more than necessary and restrict by date after fetching.
-    since_days = math.ceil(since.total_seconds() / (24 * 60 * 60))
-    runs_per_day = 50
-    limit = runs_per_day * since_days
-    cmd.extend(["--limit", str(limit)])
 
     runs = [
         Run(
@@ -156,26 +151,9 @@ async def runs(
         )
         for data in json.loads(await _gh(*cmd))
     ]
-    ids = [r.id for r in runs]
-    sorted_ids = [r.id for r in sorted(runs, key=lambda r: r.started_at, reverse=True)]
-    if ids != sorted_ids:
-        raise TringaException(
-            "Results from `gh run list` are not sorted by started_at. "
-            "This means that we need to adopt a new strategy for querying for runs by date."
-        )
-    now = datetime.now(timezone.utc)
-    truncated = [r for r in runs if r.started_at > now - since]
-    info(
-        f"`gh run list --limit {limit}` returned {len(runs)} runs, "
-        f"truncated to {len(truncated)} within the last {since_days} days"
-    )
-    if len(truncated) == len(runs):
-        raise TringaException(
-            f"All runs returned by `gh run list --limit {limit}` are within the last {since_days} days. "
-            "--limit in the code should be increased since otherwise it is not guaranteed that "
-            "we have fetched all desired runs."
-        )
-    return truncated
+
+    info(f"`gh run list` returned {len(runs)} runs within the last {since.days} days")
+    return runs
 
 
 async def run_download(run: Run, dir: Path, patterns: list[str]) -> bool:

@@ -126,7 +126,7 @@ tringa --json --since-days 7 repo sql \
 
 To experiment with alternative SQL queries interactively, change that to `repo repl`:
 ```
-uv run tringa --json --since-days 2 repo repl \
+tringa --since-days 7 repo repl \
   --branch main --workflow-id 80591745 https://github.com/temporalio/temporal
 ```
 

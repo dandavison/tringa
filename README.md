@@ -1,3 +1,9 @@
+<p align="center">
+  <img src="https://quiz.natureid.no/bird/db_media/eBook/2af757c5da93cbdcbf3516b1b1b4ea7656072828.jpg" alt="Image" width="400">
+  <br>
+  <span style="font-size: small; color: gray;"><i>Tringa nebularia</i> (Greenshank)</span>
+</p>
+
 `tringa` is a tool for querying test output across multiple CI builds on GitHub.
 It is in early development and not ready for use.
 

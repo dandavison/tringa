@@ -32,18 +32,19 @@ def fetch_data_for_repo(
     branch: Optional[str] = None,
     workflow_id: Optional[int] = None,
 ) -> None:
-    if branch:
-        rows = Fetcher()._fetch_and_parse_artifacts_for_branch(
-            repo, since, branch, workflow_id
-        )
-    else:
-        rows = Fetcher()._fetch_and_parse_artifacts_for_repo(repo, since)
-    with cli.options.db_config.connect() as db:
-        db.insert_rows(async_iterator_to_list(rows))
+    with cli.console.status(""):
+        if branch:
+            rows = Fetcher()._fetch_and_parse_artifacts_for_branch(
+                repo, since, branch, workflow_id
+            )
+        else:
+            rows = Fetcher()._fetch_and_parse_artifacts_for_repo(repo, since)
+        with cli.options.db_config.connect() as db:
+            db.insert_rows(async_iterator_to_list(rows))
 
 
 def fetch_data_for_pr(pr: PR) -> None:
-    with cli.console.status("Fetching XML artifacts"):
+    with cli.console.status(""):
         rows = asyncio.run(
             Fetcher()._fetch_and_parse_artifacts_for_pr(pr, since=cli.options.since)
         )

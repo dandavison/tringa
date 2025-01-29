@@ -97,7 +97,7 @@ class PR(Serializable):
 class Run(Serializable):
     repo: str
     id: int
-    created_at: datetime
+    created_at: Optional[datetime]
     branch: str
     sha: str
     pr: Optional[PR]
@@ -110,7 +110,7 @@ class Run(Serializable):
         return {
             "repo": self.repo,
             "id": self.id,
-            "created_at": self.created_at.isoformat(),
+            "created_at": self.created_at.isoformat() if self.created_at else None,
             "pr": self.pr.to_dict() if self.pr is not None else None,
         }
 
@@ -134,7 +134,7 @@ class TestResult(NamedTuple):
     # suite-level fields
     file: str
     suite: str
-    suite_time: datetime
+    suite_time: Optional[datetime]
     suite_duration: float
 
     # test-level fields

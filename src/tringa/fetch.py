@@ -164,7 +164,11 @@ def _parse_xml_file(
                     pr_title=pr.title if pr else None,
                     file=file.name,
                     suite=test_suite.name,
-                    suite_time=datetime.fromisoformat(test_suite.timestamp),
+                    suite_time=(
+                        datetime.fromisoformat(test_suite.timestamp)
+                        if test_suite.timestamp
+                        else None
+                    ),
                     suite_duration=test_suite.time,
                     name=test_case.name,
                     classname=test_case.classname or "",

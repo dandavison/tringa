@@ -37,7 +37,7 @@ class RunResultsWidget(Static):
                 )
             yield (
                 "Last run",
-                f"[@click=app.open_url('{rr.run.url}')]{humanize.naturaltime(rr.run.created_at)}[/]",
+                f"[@click=app.open_url('{rr.run.url}')]{humanize.naturaltime(rr.run.created_at) if rr.run.created_at else '<unknown>'}[/]",
             )
             yield (
                 "Failed tests",

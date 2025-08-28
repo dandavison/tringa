@@ -124,18 +124,31 @@ D SELECT name, type FROM pragma_table_info('test');
 
 Suppose you want to query for tests that have failed on `main` in the last 7 days:
 
-```
+```sh
 tringa --json --since-days 7 repo sql \
   'select classname, name, count(*) as failure_count from test where passed = false and skipped = false group by classname, name order by failure_count desc' \
   --branch main --workflow-id 80591745 https://github.com/temporalio/temporal
 ```
 
 To experiment with alternative SQL queries interactively, change that to `repo repl`:
-```
+```sh
 tringa --since-days 7 repo repl \
   --branch main --workflow-id 80591745 https://github.com/temporalio/temporal
 ```
 
+To find a the ID associated with a specific workflow you can use `gh`:
+
+```sh
+gh workflow list --all --repo temporalio/temporal
+
+NAME                                                             STATE              ID       
+Auto-approve temporal-cicd[bot] PRs on cloud release branches    active             179858344
+Validate PR description for placeholder lines or empty sections  active             160155054
+Check Release Dependencies                                       active             174878733
+Clean PR Description on First Approval                           active             159736585
+Create a tag                                                     active             78310623
+...
+```
 
 ### Required changes to GitHub Actions workflows
 

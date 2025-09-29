@@ -1,6 +1,8 @@
 import asyncio
 import concurrent.futures
 import tempfile
+import xml.etree.ElementTree
+import xml.sax
 from collections import namedtuple
 from datetime import datetime, timedelta
 from itertools import chain
@@ -12,7 +14,7 @@ import junitparser.xunit2 as jup
 from tringa import cli, gh
 from tringa.db import TestResult
 from tringa.models import PR, Run
-from tringa.msg import debug
+from tringa.msg import debug, warn
 from tringa.utils import async_iterator_to_list
 
 
@@ -141,41 +143,49 @@ def _parse_xml_file(
     empty_result = namedtuple("ResultElem", ["message", "text"])(None, None)
     debug(f"Parsing {file}")
     MAX_TEST_OUTPUT_LENGTH = 100_000
-    for test_suite in jup.JUnitXml.fromfile(str(file)):
-        for test_case in test_suite:
-            if not test_case.name:
-                continue
-            # Passed test cases have no result. A failed/skipped test case will
-            # typically have a single result, but the schema permits multiple.
-            for result in test_case.result or [empty_result]:
-                text = result.text
-                if text and len(text) > MAX_TEST_OUTPUT_LENGTH:
-                    debug(
-                        f"Truncating {file} output from {len(text)} to {MAX_TEST_OUTPUT_LENGTH}"
+    
+    try:
+        for test_suite in jup.JUnitXml.fromfile(str(file)):
+            for test_case in test_suite:
+                if not test_case.name:
+                    continue
+                # Passed test cases have no result. A failed/skipped test case will
+                # typically have a single result, but the schema permits multiple.
+                for result in test_case.result or [empty_result]:
+                    text = result.text
+                    if text and len(text) > MAX_TEST_OUTPUT_LENGTH:
+                        debug(
+                            f"Truncating {file} output from {len(text)} to {MAX_TEST_OUTPUT_LENGTH}"
+                        )
+                        text = text[:MAX_TEST_OUTPUT_LENGTH] + "...<truncated by tringa>"
+                    yield TestResult(
+                        repo=run.repo,
+                        artifact=artifact_name,
+                        run_id=run.id,
+                        branch=run.branch,
+                        sha=run.sha,
+                        pr=pr.number if pr else None,
+                        pr_title=pr.title if pr else None,
+                        file=file.name,
+                        suite=test_suite.name,
+                        suite_time=(
+                            datetime.fromisoformat(test_suite.timestamp)
+                            if test_suite.timestamp
+                            else None
+                        ),
+                        suite_duration=test_suite.time,
+                        name=test_case.name,
+                        classname=test_case.classname or "",
+                        flaky=False,
+                        duration=test_case.time,
+                        passed=test_case.is_passed,
+                        skipped=test_case.is_skipped,
+                        message=result.message,
+                        text=text,
                     )
-                    text = text[:MAX_TEST_OUTPUT_LENGTH] + "...<truncated by tringa>"
-                yield TestResult(
-                    repo=run.repo,
-                    artifact=artifact_name,
-                    run_id=run.id,
-                    branch=run.branch,
-                    sha=run.sha,
-                    pr=pr.number if pr else None,
-                    pr_title=pr.title if pr else None,
-                    file=file.name,
-                    suite=test_suite.name,
-                    suite_time=(
-                        datetime.fromisoformat(test_suite.timestamp)
-                        if test_suite.timestamp
-                        else None
-                    ),
-                    suite_duration=test_suite.time,
-                    name=test_case.name,
-                    classname=test_case.classname or "",
-                    flaky=False,
-                    duration=test_case.time,
-                    passed=test_case.is_passed,
-                    skipped=test_case.is_skipped,
-                    message=result.message,
-                    text=text,
-                )
+    except (xml.etree.ElementTree.ParseError, xml.sax.SAXParseException) as e:
+        warn(f"Skipping malformed XML file {file}: {e}")
+        return
+    except Exception as e:
+        warn(f"Skipping XML file {file} due to parsing error: {e}")
+        return

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://quiz.natureid.no/bird/db_media/eBook/2af757c5da93cbdcbf3516b1b1b4ea7656072828.jpg" alt="Image" width="400">
+  <img src="https://github.com/user-attachments/assets/ef0b64f9-a5c9-477b-992c-dc8d233fca42" alt="Image" width="400">
   <br>
   <span style="font-size: small; color: gray;"><i>Tringa nebularia</i> (Greenshank)</span>
 </p>

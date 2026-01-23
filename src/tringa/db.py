@@ -73,6 +73,12 @@ class DB:
         df = pd.DataFrame(rows)
         if df.empty:
             return
+
+        # Convert suite_time to datetime64[ns] to handle Optional[datetime] correctly
+        # This ensures DuckDB receives TIMESTAMP-compatible data instead of object dtype
+        if 'suite_time' in df.columns:
+            df['suite_time'] = pd.to_datetime(df['suite_time'], errors='coerce')
+
         debug(f"Inserting {n_rows} rows into {self}")
         # Sort by time so that rows from later run attempts (that match on the
         # uniqueness constraints) replace those from earlier run attempts.
